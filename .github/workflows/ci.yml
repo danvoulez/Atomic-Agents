@@ -101,7 +101,7 @@ jobs:
         working-directory: crates/napi-bindings
         run: pnpm build
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v5
         with:
           name: napi-${{ matrix.target }}
           path: crates/napi-bindings/*.node
