@@ -1,0 +1,70 @@
+# L3 Batch: 10 Easy Bug Fixes
+name: Batch Easy 10
+description: 10 trivial bug fixes to test basic system throughput
+
+jobs:
+  - name: "Bug Fix 1"
+    type: bug_fix
+    mode: mechanic
+    goal: "Fix the multiplication bug in utils.ts"
+    expected_status: succeeded
+
+  - name: "Bug Fix 2"
+    type: bug_fix
+    mode: mechanic
+    goal: "Fix the typo in error message"
+    expected_status: succeeded
+
+  - name: "Bug Fix 3"
+    type: bug_fix
+    mode: mechanic
+    goal: "Fix the off-by-one error in loop"
+    expected_status: succeeded
+
+  - name: "Bug Fix 4"
+    type: bug_fix
+    mode: mechanic
+    goal: "Fix the null check in handler"
+    expected_status: succeeded
+
+  - name: "Bug Fix 5"
+    type: bug_fix
+    mode: mechanic
+    goal: "Fix the missing await in async function"
+    expected_status: succeeded
+
+  - name: "Bug Fix 6"
+    type: bug_fix
+    mode: mechanic
+    goal: "Fix the incorrect type annotation"
+    expected_status: succeeded
+
+  - name: "Bug Fix 7"
+    type: bug_fix
+    mode: mechanic
+    goal: "Fix the wrong comparison operator"
+    expected_status: succeeded
+
+  - name: "Bug Fix 8"
+    type: bug_fix
+    mode: mechanic
+    goal: "Fix the missing return statement"
+    expected_status: succeeded
+
+  - name: "Bug Fix 9"
+    type: bug_fix
+    mode: mechanic
+    goal: "Fix the incorrect import path"
+    expected_status: succeeded
+
+  - name: "Bug Fix 10"
+    type: bug_fix
+    mode: mechanic
+    goal: "Fix the string interpolation syntax"
+    expected_status: succeeded
+
+metrics:
+  target_pass_rate: 0.9
+  target_avg_duration_ms: 30000
+  target_avg_steps: 8
+

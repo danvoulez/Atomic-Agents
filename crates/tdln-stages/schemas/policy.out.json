@@ -1,0 +1,17 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "PolicyOut",
+  "type": "object",
+  "properties": {
+    "allowed": { "type": "boolean" },
+    "reason": { "type": ["string", "null"] },
+    "normalized_goal": { "type": "string" },
+    "mode": { "type": "string", "enum": ["mechanic", "genius"] },
+    "constraints": {
+      "type": "array",
+      "items": { "type": "string" }
+    }
+  },
+  "required": ["allowed", "normalized_goal", "mode", "constraints"],
+  "additionalProperties": false
+}

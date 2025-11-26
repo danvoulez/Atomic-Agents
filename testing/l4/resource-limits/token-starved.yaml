@@ -1,0 +1,35 @@
+# L4 Resource Limits: Token Starvation
+name: Token Starved Tests
+level: L4
+category: resource_limits
+
+scenarios:
+  - name: "5000 token cap"
+    input:
+      goal: "Fix the bug in utils.ts"
+      constraints:
+        tokenCap: 5000
+    expectations:
+      behavior: "Should either solve quickly or fail gracefully"
+      acceptable_outcomes: [succeeded, failed]
+      failure_reason_if_failed: "token_limit_exceeded"
+
+  - name: "1000 token cap"
+    input:
+      goal: "Analyze the codebase structure"
+      constraints:
+        tokenCap: 1000
+    expectations:
+      behavior: "Should fail gracefully with proper error"
+      likely_outcome: failed
+      failure_reason: "token_limit_exceeded"
+
+  - name: "Token budget tracking"
+    input:
+      goal: "Fix multiple small bugs"
+      constraints:
+        tokenCap: 10000
+    expectations:
+      tokens_used_accurately_tracked: true
+      stops_before_exceeding: true
+

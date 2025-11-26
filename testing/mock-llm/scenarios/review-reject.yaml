@@ -1,0 +1,41 @@
+# Mock LLM responses for review reject scenario
+name: review-reject
+description: Deterministic responses for rejecting a PR with issues
+
+responses:
+  - thought: "Let me check the current changes by looking at the git diff."
+    tool_calls:
+      - name: get_repo_state
+        arguments: {}
+
+  - thought: "I'll review the changed files."
+    tool_calls:
+      - name: read_file
+        arguments:
+          path: "src/utils.ts"
+
+  - thought: "I see several issues with this code. Let me run lints."
+    tool_calls:
+      - name: run_lint
+        arguments: {}
+
+  - thought: "There are linting errors. Let me also run tests."
+    tool_calls:
+      - name: run_tests
+        arguments:
+          scope: "all"
+
+  - thought: "Recording my review with requested changes."
+    tool_calls:
+      - name: record_review
+        arguments:
+          verdict: "request_changes"
+          feedback: |
+            Please address the following issues:
+            1. Missing type annotations on function parameters
+            2. Linting errors detected
+            3. Missing unit tests for new functionality
+            4. Consider adding error handling for edge cases
+
+  - content: "Review complete. I've requested changes on this PR. There are some linting issues and missing tests that need to be addressed before merging."
+

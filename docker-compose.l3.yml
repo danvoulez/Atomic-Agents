@@ -1,0 +1,222 @@
+version: "3.8"
+
+# L3 E2E test environment - Full stack with multiple workers, monitoring
+# Usage: docker compose -f docker-compose.l3.yml up -d
+
+services:
+  # =============================================================================
+  # Core Infrastructure
+  # =============================================================================
+  
+  postgres:
+    image: postgres:15-alpine
+    container_name: ai-coding-team-l3-postgres
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: testpassword
+      POSTGRES_DB: ai_coding_team_l3
+    ports:
+      - "55434:5432"
+    volumes:
+      - postgres_l3_data:/var/lib/postgresql/data
+      - ./packages/db/migrations:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    networks:
+      - l3-network
+
+  # =============================================================================
+  # Workers - Multiple replicas for parallel job processing
+  # =============================================================================
+  
+  worker-mechanic:
+    build:
+      context: ./packages/worker
+      dockerfile: Dockerfile
+    environment:
+      - WORKER_MODE=mechanic
+      - LLM_PROVIDER=${LLM_PROVIDER:-mock}
+      - LLM_BASE_URL=${LLM_BASE_URL:-http://mock-llm:8000}
+      - OPENAI_API_KEY=${OPENAI_API_KEY:-}
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY:-}
+      - DATABASE_URL=postgres://postgres:testpassword@postgres:5432/ai_coding_team_l3
+      - STEP_CAP=20
+      - TOKEN_CAP=50000
+      - TIME_LIMIT_MS=120000
+      - WORKER_ID=mechanic-${HOSTNAME:-0}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - l3-network
+    deploy:
+      replicas: 3
+      resources:
+        limits:
+          cpus: '1'
+          memory: 1G
+
+  worker-genius:
+    build:
+      context: ./packages/worker
+      dockerfile: Dockerfile
+    environment:
+      - WORKER_MODE=genius
+      - LLM_PROVIDER=${LLM_PROVIDER:-mock}
+      - LLM_BASE_URL=${LLM_BASE_URL:-http://mock-llm:8000}
+      - OPENAI_API_KEY=${OPENAI_API_KEY:-}
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY:-}
+      - DATABASE_URL=postgres://postgres:testpassword@postgres:5432/ai_coding_team_l3
+      - STEP_CAP=100
+      - TOKEN_CAP=200000
+      - TIME_LIMIT_MS=600000
+      - WORKER_ID=genius-${HOSTNAME:-0}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - l3-network
+    deploy:
+      replicas: 1
+      resources:
+        limits:
+          cpus: '2'
+          memory: 2G
+
+  # =============================================================================
+  # Dashboard
+  # =============================================================================
+  
+  dashboard:
+    build:
+      context: ./packages/dashboard
+      dockerfile: Dockerfile
+    container_name: ai-coding-team-l3-dashboard
+    environment:
+      - NODE_ENV=test
+      - DATABASE_URL=postgres://postgres:testpassword@postgres:5432/ai_coding_team_l3
+    ports:
+      - "3001:3000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - l3-network
+
+  # =============================================================================
+  # Test Infrastructure
+  # =============================================================================
+  
+  mock-llm:
+    build:
+      context: ./testing/mock-llm
+      dockerfile: Dockerfile
+    container_name: ai-coding-team-l3-mock-llm
+    ports:
+      - "8000:8000"
+    environment:
+      - PORT=8000
+      - SCENARIOS_PATH=/app/scenarios
+    volumes:
+      - ./testing/mock-llm/scenarios:/app/scenarios:ro
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost:8000/health"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - l3-network
+
+  gitea:
+    image: gitea/gitea:1.21-rootless
+    container_name: ai-coding-team-l3-gitea
+    environment:
+      - GITEA__database__DB_TYPE=sqlite3
+      - GITEA__server__ROOT_URL=http://localhost:3002
+      - GITEA__server__HTTP_PORT=3000
+      - GITEA__security__INSTALL_LOCK=true
+    ports:
+      - "3002:3000"
+      - "2222:22"
+    volumes:
+      - gitea_l3_data:/var/lib/gitea
+      - ./testing/fixtures/repos:/repos:ro
+    networks:
+      - l3-network
+
+  # =============================================================================
+  # Observability
+  # =============================================================================
+  
+  prometheus:
+    image: prom/prometheus:v2.47.0
+    container_name: ai-coding-team-l3-prometheus
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./testing/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus_l3_data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.enable-lifecycle'
+    networks:
+      - l3-network
+
+  grafana:
+    image: grafana/grafana:10.2.0
+    container_name: ai-coding-team-l3-grafana
+    ports:
+      - "3003:3000"
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+      - GF_USERS_ALLOW_SIGN_UP=false
+    volumes:
+      - grafana_l3_data:/var/lib/grafana
+      - ./testing/grafana/dashboards:/etc/grafana/provisioning/dashboards:ro
+      - ./testing/grafana/datasources:/etc/grafana/provisioning/datasources:ro
+    depends_on:
+      - prometheus
+    networks:
+      - l3-network
+
+  # =============================================================================
+  # L3 Test Runner
+  # =============================================================================
+  
+  test-runner:
+    build:
+      context: ./testing/l3
+      dockerfile: Dockerfile
+    container_name: ai-coding-team-l3-test-runner
+    environment:
+      - DATABASE_URL=postgres://postgres:testpassword@postgres:5432/ai_coding_team_l3
+      - DASHBOARD_URL=http://dashboard:3000
+      - GITEA_URL=http://gitea:3000
+      - PROMETHEUS_URL=http://prometheus:9090
+    volumes:
+      - ./testing/l3/scenarios:/app/scenarios:ro
+      - ./testing/l3/results:/app/results
+    depends_on:
+      - postgres
+      - dashboard
+      - worker-mechanic
+      - worker-genius
+    networks:
+      - l3-network
+    profiles:
+      - runner
+
+volumes:
+  postgres_l3_data:
+  gitea_l3_data:
+  prometheus_l3_data:
+  grafana_l3_data:
+
+networks:
+  l3-network:
+    driver: bridge
+

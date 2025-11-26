@@ -1,0 +1,42 @@
+# L4 Resource Limits: Aggressive Timeouts
+name: Timeout Tests
+level: L4
+category: resource_limits
+
+scenarios:
+  - name: "10 second timeout"
+    input:
+      goal: "Fix the simple typo"
+      constraints:
+        timeLimitMs: 10000
+    expectations:
+      behavior: "Should complete or timeout gracefully"
+      max_duration_ms: 10000
+
+  - name: "5 second timeout"
+    input:
+      goal: "Read and analyze file"
+      constraints:
+        timeLimitMs: 5000
+    expectations:
+      behavior: "Very tight - may not complete"
+      max_duration_ms: 5000
+
+  - name: "Timeout during tool call"
+    input:
+      goal: "Run comprehensive tests"
+      constraints:
+        timeLimitMs: 3000
+    expectations:
+      behavior: "Should handle timeout during long operation"
+      cleanup: "No zombie processes"
+
+  - name: "Race between timeout and completion"
+    input:
+      goal: "Quick bug fix"
+      constraints:
+        timeLimitMs: 15000
+    expectations:
+      behavior: "Should complete if fast enough"
+      timeout_reason_if_timeout: "time_limit_exceeded"
+

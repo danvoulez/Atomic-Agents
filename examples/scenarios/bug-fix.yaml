@@ -1,0 +1,104 @@
+# Bug Fix Scenario
+# Tests the basic bug fix workflow through all agents
+
+name: Simple Bug Fix
+description: Fix a null pointer exception in authentication
+version: "1.0"
+tags:
+  - bug-fix
+  - mechanic
+  - simple
+
+setup:
+  repo:
+    type: inline
+    files:
+      - path: src/auth.ts
+        content: |
+          export function validateToken(token: string): boolean {
+            // BUG: token can be undefined
+            return token.startsWith('Bearer');
+          }
+          
+          export function extractUserId(token: string): string | null {
+            if (!validateToken(token)) return null;
+            return token.split(':')[1] ?? null;
+          }
+      
+      - path: src/auth.test.ts
+        content: |
+          import { validateToken, extractUserId } from './auth';
+          
+          describe('validateToken', () => {
+            it('should return true for valid tokens', () => {
+              expect(validateToken('Bearer abc123')).toBe(true);
+            });
+            
+            it('should return false for invalid tokens', () => {
+              expect(validateToken('Invalid')).toBe(false);
+            });
+            
+            // This test will fail until the bug is fixed
+            it('should handle undefined input', () => {
+              expect(validateToken(undefined as any)).toBe(false);
+            });
+          });
+      
+      - path: package.json
+        content: |
+          {
+            "name": "test-repo",
+            "scripts": {
+              "test": "jest"
+            },
+            "devDependencies": {
+              "jest": "^29.0.0",
+              "@types/jest": "^29.0.0"
+            }
+          }
+
+input:
+  goal: "Fix the null pointer exception in validateToken"
+  mode: mechanic
+
+expected:
+  status: succeeded
+  
+  # Expected agent flow
+  agents:
+    - coordinator
+    - planner
+    - builder
+    - reviewer
+    - evaluator
+  
+  # Expected code changes
+  changes:
+    files:
+      - path: src/auth.ts
+        contains:
+          - "token?.startsWith"  # Optional chaining fix
+          # OR
+          - "if (!token)"        # Guard clause fix
+  
+  # Tests should pass after fix
+  tests:
+    status: pass
+    min_passed: 3
+  
+  # Quality checks
+  quality:
+    verdict: OK
+  
+  # Evaluation scores
+  evaluation:
+    correctness: ">= 0.8"
+    efficiency: ">= 0.5"
+    honesty: ">= 0.9"
+    safety: ">= 0.9"
+  
+  # Budget constraints
+  budget:
+    max_steps: 20
+    max_tokens: 50000
+

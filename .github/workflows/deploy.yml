@@ -1,0 +1,105 @@
+name: Deploy
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: "Environment to deploy to"
+        required: true
+        default: "staging"
+        type: choice
+        options:
+          - staging
+          - production
+
+env:
+  AWS_REGION: us-east-1
+
+jobs:
+  build-and-push:
+    name: Build and Push
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+      contents: read
+    outputs:
+      image_tag: ${{ steps.meta.outputs.tags }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set image tag
+        id: meta
+        run: echo "tags=${{ github.sha }}" >> $GITHUB_OUTPUT
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Login to ECR
+        id: ecr-login
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Build and push dashboard
+        uses: docker/build-push-action@v5
+        with:
+          context: ./packages/dashboard
+          push: true
+          tags: |
+            ${{ steps.ecr-login.outputs.registry }}/ai-coding-team-${{ inputs.environment || 'staging' }}/dashboard:${{ github.sha }}
+            ${{ steps.ecr-login.outputs.registry }}/ai-coding-team-${{ inputs.environment || 'staging' }}/dashboard:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Build and push worker
+        uses: docker/build-push-action@v5
+        with:
+          context: ./packages/worker
+          push: true
+          tags: |
+            ${{ steps.ecr-login.outputs.registry }}/ai-coding-team-${{ inputs.environment || 'staging' }}/worker:${{ github.sha }}
+            ${{ steps.ecr-login.outputs.registry }}/ai-coding-team-${{ inputs.environment || 'staging' }}/worker:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  deploy:
+    name: Deploy to ${{ inputs.environment || 'staging' }}
+    needs: build-and-push
+    runs-on: ubuntu-latest
+    environment: ${{ inputs.environment || 'staging' }}
+    steps:
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Deploy Dashboard
+        run: |
+          aws ecs update-service \
+            --cluster ai-coding-team-${{ inputs.environment || 'staging' }}-cluster \
+            --service dashboard \
+            --force-new-deployment
+
+      - name: Deploy Mechanic Worker
+        run: |
+          aws ecs update-service \
+            --cluster ai-coding-team-${{ inputs.environment || 'staging' }}-cluster \
+            --service mechanic-worker \
+            --force-new-deployment
+
+      - name: Deploy Genius Worker
+        run: |
+          aws ecs update-service \
+            --cluster ai-coding-team-${{ inputs.environment || 'staging' }}-cluster \
+            --service genius-worker \
+            --force-new-deployment
+
+      - name: Wait for deployment
+        run: |
+          aws ecs wait services-stable \
+            --cluster ai-coding-team-${{ inputs.environment || 'staging' }}-cluster \
+            --services dashboard mechanic-worker genius-worker

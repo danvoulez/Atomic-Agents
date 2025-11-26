@@ -1,0 +1,12 @@
+pipeline:
+  - stage: parse.promptspec.in.v1
+  - stage: assist.llm.advice.v1     # opcional (LLM aconselha)
+  - stage: resolve.truthpack.v1     # opcional (fixa evidências)
+  - stage: policy.strict.v1         # gate
+  - stage: render.korean.out.v1     # saída determinística
+
+settings:
+  outLocale: ko-KR
+  quality_profile: strict@1.0
+  no_truth_no_output: true
+  determinism_runs: 5

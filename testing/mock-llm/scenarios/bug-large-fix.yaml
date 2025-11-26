@@ -1,0 +1,46 @@
+# Mock LLM responses for large bug fix scenario
+name: bug-large-fix
+description: Deterministic responses for a bug that requires too large a fix
+
+responses:
+  - thought: "I need to understand the scope of this bug."
+    tool_calls:
+      - name: read_file
+        arguments:
+          path: "src/main.ts"
+
+  - thought: "This bug affects multiple files. Let me search for all occurrences."
+    tool_calls:
+      - name: search_code
+        arguments:
+          query: "deprecated_function"
+
+  - thought: "This is a large refactoring. The deprecated function is used in 15 files with over 500 lines affected."
+    tool_calls:
+      - name: list_files
+        arguments:
+          directory: "src"
+
+  - thought: "This fix exceeds the mechanic mode limits (5 files, 200 lines). I need to escalate."
+    tool_calls:
+      - name: request_human_review
+        arguments:
+          reason: "Fix exceeds mechanic mode limits"
+          details: |
+            The bug fix requires changes to 15+ files and over 500 lines.
+            This exceeds the mechanic mode limits of:
+            - MAX_FILES: 5
+            - MAX_LINES: 200
+            
+            Recommendation: Either switch to genius mode or break this into smaller PRs.
+            
+            Affected files:
+            - src/main.ts
+            - src/auth/login.ts
+            - src/auth/logout.ts
+            - src/api/users.ts
+            - src/api/products.ts
+            - ... and 10 more
+
+  - content: "I've identified that this bug fix exceeds the limits for mechanic mode. The deprecated function is used in 15+ files with significant changes needed. I've escalated this for human review with recommendations on how to proceed."
+

@@ -1,0 +1,37 @@
+# L2 Scenario: Code Review - Request Changes
+name: review-reject
+level: L2
+type: review
+mode: mechanic
+
+setup:
+  repo: simple-ts
+  files:
+    - path: src/utils.ts
+      content: |
+        // Buggy implementation for review
+        export function multiply(x: number, y: number): number {
+          return x + y; // BUG: Wrong operator
+        }
+
+        export function divide(x, y) { // Missing types
+          return x / y; // No zero check
+        }
+
+input:
+  goal: "Review the latest changes to utils.ts. Check for bugs, type safety, and error handling."
+  constraints:
+    stepCap: 10
+    tokenCap: 20000
+    timeLimitMs: 30000
+
+expectations:
+  max_steps: 8
+  must_call:
+    - get_diff
+    - read_file
+    - request_changes
+  must_not_call:
+    - approve_changes
+  final_status: succeeded
+

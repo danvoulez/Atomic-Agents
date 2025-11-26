@@ -1,0 +1,69 @@
+{
+  "name": "atomic-agents",
+  "version": "1.0.0",
+  "description": "An autonomous AI engineering team that can understand, plan, build, review, and evaluate code changes",
+  "private": true,
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/danvoulez/Atomic-Agents.git"
+  },
+  "author": "danvoulez",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/danvoulez/Atomic-Agents/issues"
+  },
+  "homepage": "https://github.com/danvoulez/Atomic-Agents#readme",
+  "keywords": [
+    "ai",
+    "agents",
+    "coding",
+    "automation",
+    "llm",
+    "typescript",
+    "rust"
+  ],
+  "workspaces": [
+    "packages/*",
+    "crates/napi-bindings"
+  ],
+  "scripts": {
+    "dev": "turbo run dev",
+    "build": "turbo run build",
+    "build:all": "pnpm rust:build && pnpm napi:build && pnpm build",
+    "test": "turbo run test",
+    "lint": "turbo run lint",
+    "db:start": "docker compose up -d postgres",
+    "db:stop": "docker compose down",
+    "db:reset": "docker compose down -v && docker compose up -d postgres",
+    "db:migrate": "pnpm --filter @ai-coding-team/db migrate",
+    "db:studio": "docker compose --profile tools up -d adminer",
+    "rust:build": "cargo build --release",
+    "rust:test": "cargo test",
+    "rust:watch": "cargo watch -x 'build --release'",
+    "napi:build": "cd crates/napi-bindings && pnpm build",
+    "napi:dev": "cd crates/napi-bindings && pnpm build:debug",
+    "setup": "pnpm install && pnpm rust:build && pnpm napi:build && pnpm db:start && pnpm db:migrate",
+    "clean": "turbo run clean && cargo clean",
+    "test:l0": "vitest run packages/**/tests/l0/**",
+    "test:l1": "vitest run packages/**/tests/l1/**",
+    "test:l2": "docker compose -f docker-compose.test.yml up -d && vitest run packages/**/tests/l2/** && docker compose -f docker-compose.test.yml down",
+    "test:l3": "docker compose -f docker-compose.l3.yml up -d && node testing/l3/runner.js && docker compose -f docker-compose.l3.yml down",
+    "test:l4": "docker compose -f docker-compose.l3.yml up -d && node testing/l4/adversarial-runner.js && docker compose -f docker-compose.l3.yml down",
+    "test:chaos": "cd testing/l4/chaos && npm start",
+    "test:all": "pnpm test:l0 && pnpm test:l1 && pnpm test:l2",
+    "test:full": "pnpm test:all && pnpm test:l3",
+    "test:env:start": "docker compose -f docker-compose.test.yml up -d",
+    "test:env:stop": "docker compose -f docker-compose.test.yml down"
+  },
+  "devDependencies": {
+    "turbo": "^2.0.0",
+    "typescript": "^5.3.0",
+    "ts-node": "^10.9.2",
+    "@napi-rs/cli": "^2.18.0"
+  },
+  "engines": {
+    "node": ">=20.0.0",
+    "pnpm": ">=8.0.0"
+  },
+  "packageManager": "pnpm@8.15.0"
+}

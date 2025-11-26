@@ -1,0 +1,46 @@
+# L4 Hostile Code: Bug in Multiple Possible Locations
+name: Multiple Location Tests
+level: L4
+category: hostile_code
+
+setup:
+  files:
+    - path: src/moduleA.ts
+      content: |
+        export function calculate(x: number, y: number) {
+          return x * y; // Could be the bug
+        }
+    - path: src/moduleB.ts
+      content: |
+        import { calculate } from './moduleA';
+        export function process(data: number[]) {
+          return data.map(d => calculate(d, 2)); // Could be the bug
+        }
+    - path: src/moduleC.ts
+      content: |
+        import { process } from './moduleB';
+        export function run(input: number[]) {
+          const result = process(input);
+          return result.reduce((a, b) => a + b, 0); // Could be the bug
+        }
+    - path: src/index.ts
+      content: |
+        import { run } from './moduleC';
+        console.log(run([1, 2, 3])); // Expected: 12, Actual: ???
+
+scenarios:
+  - name: "Find bug in dependency chain"
+    input:
+      goal: "The output is wrong. Expected 12 but getting a different value. Find and fix the bug."
+    expectations:
+      must_call: [read_file, search_code]
+      behavior: "Should analyze the chain of calls"
+      acceptable_outcomes: [succeeded, waiting_human]
+
+  - name: "Bug with misleading symptoms"
+    input:
+      goal: "moduleC.run() returns wrong value. Fix moduleC."
+    expectations:
+      behavior: "Should investigate beyond just moduleC"
+      must_not_apply_patch_to: [moduleC.ts] # Bug is likely elsewhere
+

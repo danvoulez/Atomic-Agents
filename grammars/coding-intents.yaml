@@ -1,0 +1,271 @@
+# TDLN-IN Grammar: Coding Intent Patterns
+# Used to translate natural language into LogLine operation spans
+
+version: "1.0"
+
+rules:
+  # =============================================================================
+  # Bug Fixes
+  # =============================================================================
+  - name: bug_fix
+    description: "Fix bugs, debug issues, resolve errors"
+    patterns:
+      - "fix {target}"
+      - "fix the bug in {target}"
+      - "debug {target}"
+      - "resolve {issue} in {target}"
+      - "{target} is broken"
+      - "{target} is not working"
+      - "there's a bug in {target}"
+      - "error in {target}"
+      - "{target} throws an error"
+      - "{target} crashes"
+      - "fix the {issue} bug"
+      - "the {target} doesn't work"
+    params:
+      target:
+        type: file_or_symbol
+        required: false
+        default: "@current_context"
+      issue:
+        type: string
+        required: false
+    mode: mechanic
+    constraints:
+      maxFiles: 5
+      maxLines: 200
+      mustPassTests: true
+
+  # =============================================================================
+  # Features
+  # =============================================================================
+  - name: feature
+    description: "Add new features, implement functionality"
+    patterns:
+      - "add {feature}"
+      - "implement {feature}"
+      - "create {feature}"
+      - "build {feature}"
+      - "make {feature}"
+      - "add a {feature} to {target}"
+      - "implement {feature} in {target}"
+      - "create a new {feature}"
+      - "we need {feature}"
+      - "add support for {feature}"
+    params:
+      feature:
+        type: string
+        required: true
+      target:
+        type: file_or_symbol
+        required: false
+    mode: genius
+    constraints:
+      mustPassTests: true
+
+  # =============================================================================
+  # Analysis / Explanation
+  # =============================================================================
+  - name: analyze
+    description: "Explain code, analyze behavior, understand systems"
+    patterns:
+      - "explain {subject}"
+      - "how does {subject} work"
+      - "what does {subject} do"
+      - "what is {subject}"
+      - "analyze {subject}"
+      - "understand {subject}"
+      - "describe {subject}"
+      - "walk me through {subject}"
+      - "why does {subject} {behavior}"
+      - "trace {subject}"
+    params:
+      subject:
+        type: string
+        required: true
+      behavior:
+        type: string
+        required: false
+    mode: mechanic
+    readOnly: true
+
+  # =============================================================================
+  # Code Review
+  # =============================================================================
+  - name: review
+    description: "Review code changes, check for issues"
+    patterns:
+      - "review {target}"
+      - "check {target}"
+      - "look at {target}"
+      - "review my changes"
+      - "review the code"
+      - "code review"
+      - "review the PR"
+      - "review the pull request"
+      - "check my work"
+      - "is {target} correct"
+    params:
+      target:
+        type: string
+        required: false
+        default: "@latest_changes"
+    mode: mechanic
+    readOnly: true
+
+  # =============================================================================
+  # Refactoring
+  # =============================================================================
+  - name: refactor
+    description: "Refactor, clean up, improve code structure"
+    patterns:
+      - "refactor {target}"
+      - "clean up {target}"
+      - "improve {target}"
+      - "simplify {target}"
+      - "reorganize {target}"
+      - "restructure {target}"
+      - "make {target} cleaner"
+      - "optimize {target}"
+      - "reduce complexity in {target}"
+      - "extract {what} from {target}"
+    params:
+      target:
+        type: file_or_symbol
+        required: true
+      what:
+        type: string
+        required: false
+    mode: genius
+    constraints:
+      mustPassTests: true
+
+  # =============================================================================
+  # Testing
+  # =============================================================================
+  - name: test
+    description: "Write tests, run tests, improve coverage"
+    patterns:
+      - "write tests for {target}"
+      - "add tests for {target}"
+      - "test {target}"
+      - "run tests"
+      - "run the tests"
+      - "improve test coverage for {target}"
+      - "create unit tests for {target}"
+      - "write integration tests for {target}"
+    params:
+      target:
+        type: file_or_symbol
+        required: false
+    mode: mechanic
+    constraints:
+      mustPassTests: true
+
+  # =============================================================================
+  # Documentation
+  # =============================================================================
+  - name: document
+    description: "Write documentation, add comments"
+    patterns:
+      - "document {target}"
+      - "add documentation for {target}"
+      - "add comments to {target}"
+      - "write docs for {target}"
+      - "explain {target} in code"
+      - "add JSDoc to {target}"
+      - "add docstrings to {target}"
+    params:
+      target:
+        type: file_or_symbol
+        required: true
+    mode: mechanic
+    constraints:
+      maxFiles: 10
+
+  # =============================================================================
+  # File Operations
+  # =============================================================================
+  - name: file_create
+    description: "Create new files"
+    patterns:
+      - "create {filename}"
+      - "create a new file {filename}"
+      - "make {filename}"
+      - "add file {filename}"
+    params:
+      filename:
+        type: string
+        required: true
+    mode: mechanic
+
+  - name: file_delete
+    description: "Delete files"
+    patterns:
+      - "delete {filename}"
+      - "remove {filename}"
+      - "get rid of {filename}"
+    params:
+      filename:
+        type: string
+        required: true
+    mode: genius
+    constraints:
+      requiresConfirmation: true
+
+  - name: file_rename
+    description: "Rename or move files"
+    patterns:
+      - "rename {source} to {destination}"
+      - "move {source} to {destination}"
+    params:
+      source:
+        type: string
+        required: true
+      destination:
+        type: string
+        required: true
+    mode: mechanic
+
+# =============================================================================
+# Slot Types - How to extract parameter values
+# =============================================================================
+slots:
+  file_or_symbol:
+    description: "A file path, symbol name, or reference"
+    patterns:
+      # File paths
+      - pattern: '([a-zA-Z0-9_/.-]+\.[a-zA-Z]+)'
+        type: file_path
+      # Symbol references with @
+      - pattern: '@([a-zA-Z0-9_.]+)'
+        type: symbol_ref
+      # Natural language references
+      - pattern: 'the ([a-zA-Z0-9_]+(?:\s+[a-zA-Z0-9_]+)?)'
+        type: natural_ref
+      - pattern: 'in ([a-zA-Z0-9_]+)'
+        type: context_ref
+
+  string:
+    description: "Free-form text"
+    patterns:
+      - pattern: '"([^"]+)"'
+        type: quoted
+      - pattern: "'([^']+)'"
+        type: quoted
+      - pattern: '(.+)'
+        type: unquoted
+
+# =============================================================================
+# Fallback / Abstain Patterns
+# =============================================================================
+abstain:
+  description: "Patterns that should result in ABSTAIN verdict"
+  triggers:
+    - too_vague: "Single word with no context"
+    - ambiguous: "Could match multiple operations"
+    - dangerous: "Potentially destructive without clear intent"
+  clarification_templates:
+    too_vague: "I'm not sure what you'd like me to do with '{input}'. Try: 'fix [bug] in [file]', 'add [feature]', or 'explain [code]'"
+    ambiguous: "'{input}' could mean a few things. Did you want me to: {options}"
+    dangerous: "'{input}' sounds like it could be risky. Can you be more specific about what you want to change?"

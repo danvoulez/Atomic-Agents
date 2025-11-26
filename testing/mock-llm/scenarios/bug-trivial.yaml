@@ -1,0 +1,39 @@
+# Mock LLM responses for trivial bug fix scenario
+name: bug-trivial
+description: Deterministic responses for fixing a simple bug
+
+responses:
+  - thought: "I need to read the file to understand the bug."
+    tool_calls:
+      - name: read_file
+        arguments:
+          path: "src/utils.ts"
+
+  - thought: "I found the bug - using + instead of *. Let me apply a fix."
+    tool_calls:
+      - name: apply_patch
+        arguments:
+          patch: |
+            --- a/src/utils.ts
+            +++ b/src/utils.ts
+            @@ -1,5 +1,5 @@
+             export function multiply(x: number, y: number): number {
+            -  return x + y;
+            +  return x * y;
+             }
+          description: "Fix multiplication bug: change + to *"
+
+  - thought: "Let me verify the fix by running tests."
+    tool_calls:
+      - name: run_tests
+        arguments:
+          scope: "all"
+
+  - thought: "Tests passed. I'll commit the fix."
+    tool_calls:
+      - name: commit_changes
+        arguments:
+          message: "fix: correct multiplication operation in utils.ts"
+
+  - content: "Done! I fixed the bug in src/utils.ts. The multiply function was incorrectly using addition (+) instead of multiplication (*). Tests are now passing."
+

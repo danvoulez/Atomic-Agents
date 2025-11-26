@@ -1,0 +1,29 @@
+# Code Owners
+# These owners will be requested for review when PRs touch these paths
+
+# Default owner for everything
+* @danvoulez
+
+# TypeScript packages
+/packages/ @danvoulez
+
+# Rust TDLN machinery
+/crates/ @danvoulez
+
+# Infrastructure
+/infra/ @danvoulez
+/.github/workflows/ @danvoulez
+/docker-compose*.yml @danvoulez
+
+# Documentation
+/docs/ @danvoulez
+*.md @danvoulez
+
+# Database
+/packages/db/ @danvoulez
+
+# Security-sensitive files
+/SECURITY.md @danvoulez
+/.github/workflows/deploy.yml @danvoulez
+/infra/secrets.tf @danvoulez
+

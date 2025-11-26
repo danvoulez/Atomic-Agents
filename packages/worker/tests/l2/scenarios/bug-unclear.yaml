@@ -1,0 +1,30 @@
+# L2 Scenario: Unclear Bug Report
+name: bug-unclear
+level: L2
+type: bug_fix
+mode: mechanic
+
+setup:
+  repo: simple-ts
+
+input:
+  goal: "There's a bug somewhere in the code. Something is wrong."
+  constraints:
+    stepCap: 10
+    tokenCap: 20000
+    timeLimitMs: 30000
+
+mockResponses:
+  scenario: bug-unclear
+
+expectations:
+  max_steps: 8
+  must_call:
+    - search_code
+    - request_human_review
+  must_not_call:
+    - apply_patch
+    - commit_changes
+  final_status: waiting_human
+  escalation_reason: "ambiguous"
+

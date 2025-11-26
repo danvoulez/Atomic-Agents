@@ -1,0 +1,28 @@
+{
+  "name": "@ai-coding-team/worker",
+  "version": "1.0.0",
+  "type": "module",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "lint": "tsc -p tsconfig.json --noEmit",
+    "test": "DATABASE_URL=postgres://postgres:testpassword@localhost:55433/ai_coding_team_test vitest run",
+    "test:l0": "DATABASE_URL=postgres://postgres:testpassword@localhost:55433/ai_coding_team_test LLM_PROVIDER=mock MOCK_LLM_URL=http://localhost:8000 vitest run tests/l0",
+    "test:l2": "DATABASE_URL=postgres://postgres:testpassword@localhost:55433/ai_coding_team_test MOCK_LLM_URL=http://localhost:8000 vitest run tests/l2"
+  },
+  "dependencies": {
+    "@ai-coding-team/types": "1.0.0",
+    "@ai-coding-team/agents": "1.0.0",
+    "@ai-coding-team/db": "1.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.17.10",
+    "js-yaml": "^4.1.0",
+    "typescript": "^5.3.0",
+    "vitest": "^1.6.0"
+  }
+}

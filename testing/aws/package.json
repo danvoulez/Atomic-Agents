@@ -1,0 +1,18 @@
+{
+  "name": "aws-tests",
+  "version": "1.0.0",
+  "description": "AWS staging and production tests",
+  "type": "module",
+  "scripts": {
+    "smoke": "tsx smoke.ts",
+    "canary": "tsx canary.ts",
+    "smoke:staging": "ENVIRONMENT=staging tsx smoke.ts",
+    "smoke:production": "ENVIRONMENT=production tsx smoke.ts"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "tsx": "^4.0.0",
+    "typescript": "^5.3.0"
+  }
+}
+

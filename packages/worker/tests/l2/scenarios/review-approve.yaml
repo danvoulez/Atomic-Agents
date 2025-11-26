@@ -1,0 +1,62 @@
+# L2 Scenario: Code Review - Approve Clean PR
+name: review-approve
+level: L2
+type: review
+mode: mechanic
+
+setup:
+  repo: simple-ts
+  files:
+    - path: src/utils.ts
+      content: |
+        /**
+         * Multiply two numbers
+         * @param x First number
+         * @param y Second number
+         * @returns Product of x and y
+         */
+        export function multiply(x: number, y: number): number {
+          return x * y;
+        }
+
+        /**
+         * Divide two numbers safely
+         * @param x Numerator
+         * @param y Denominator
+         * @returns Quotient of x and y
+         * @throws Error if y is zero
+         */
+        export function divide(x: number, y: number): number {
+          if (y === 0) {
+            throw new Error("Cannot divide by zero");
+          }
+          return x / y;
+        }
+
+        /**
+         * Calculate the power of x to y
+         * @param x Base
+         * @param y Exponent
+         * @returns x raised to the power of y
+         */
+        export function power(x: number, y: number): number {
+          return Math.pow(x, y);
+        }
+
+input:
+  goal: "Review the latest changes to utils.ts. Check for bugs, code quality, and proper documentation."
+  constraints:
+    stepCap: 10
+    tokenCap: 20000
+    timeLimitMs: 30000
+
+expectations:
+  max_steps: 8
+  must_call:
+    - get_diff
+    - read_file
+    - approve_changes
+  must_not_call:
+    - apply_patch
+  final_status: succeeded
+

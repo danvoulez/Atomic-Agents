@@ -1,0 +1,78 @@
+# Mock LLM responses for simple feature addition
+name: feature-simple
+description: Deterministic responses for adding a simple feature
+
+responses:
+  - thought: "I need to understand the current codebase structure."
+    tool_calls:
+      - name: list_files
+        arguments:
+          path: "src"
+          recursive: true
+
+  - thought: "Let me read the main module to understand the patterns."
+    tool_calls:
+      - name: read_file
+        arguments:
+          path: "src/index.ts"
+
+  - thought: "I'll add the new function following the existing patterns."
+    tool_calls:
+      - name: apply_patch
+        arguments:
+          patch: |
+            --- a/src/utils.ts
+            +++ b/src/utils.ts
+            @@ -5,3 +5,11 @@ export function multiply(x: number, y: number): number {
+             export function divide(x: number, y: number): number {
+               return x / y;
+             }
+            +
+            +/**
+            + * Filter users by role
+            + * @param users - Array of users
+            + * @param role - Role to filter by
+            + */
+            +export function getUsersByRole(users: User[], role: string): User[] {
+            +  return users.filter(u => u.role === role);
+            +}
+          description: "Add getUsersByRole function"
+
+  - thought: "I should add tests for the new function."
+    tool_calls:
+      - name: apply_patch
+        arguments:
+          patch: |
+            --- a/src/utils.test.ts
+            +++ b/src/utils.test.ts
+            @@ -10,3 +10,15 @@ describe('divide', () => {
+               });
+             });
+            +
+            +describe('getUsersByRole', () => {
+            +  it('should filter users by role', () => {
+            +    const users = [
+            +      { id: '1', role: 'admin' },
+            +      { id: '2', role: 'user' },
+            +    ];
+            +    const admins = getUsersByRole(users, 'admin');
+            +    expect(admins).toHaveLength(1);
+            +    expect(admins[0].id).toBe('1');
+            +  });
+            +});
+          description: "Add tests for getUsersByRole"
+
+  - thought: "Let me run the tests to verify."
+    tool_calls:
+      - name: run_tests
+        arguments:
+          scope: "all"
+
+  - thought: "Tests pass. Committing the changes."
+    tool_calls:
+      - name: commit_changes
+        arguments:
+          message: "feat: add getUsersByRole function for filtering users"
+
+  - content: "Done! I added a new getUsersByRole function that filters users by their role. The function is tested and all tests are passing."
+

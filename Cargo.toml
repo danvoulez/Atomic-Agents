@@ -1,0 +1,39 @@
+[workspace]
+members = [
+    "crates/tdln-core",
+    "crates/tdln-api",
+    "crates/tdln-stages",
+    "crates/tdln-policy",
+    "crates/tdln-quality",
+    "crates/tdln-truthpack",
+    "crates/tdln-registry",
+    "crates/logline",
+    "crates/tdln-in",
+    "crates/tdln-out",
+    "crates/napi-bindings",
+]
+resolver = "2"
+
+[workspace.package]
+version = "1.0.0"
+edition = "2021"
+authors = ["AI Coding Team"]
+license = "Apache-2.0"
+
+[workspace.dependencies]
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+serde_yaml = "0.9"
+thiserror = "1.0"
+blake3 = "1.5"
+chrono = { version = "0.4", features = ["serde"] }
+uuid = { version = "1.0", features = ["v4", "serde"] }
+tokio = { version = "1.0", features = ["full"] }
+axum = "0.7"
+tower-http = { version = "0.5", features = ["trace"] }
+tracing = "0.1"
+handlebars = "5.0"
+once_cell = "1.0"
+napi = "2"
+napi-derive = "2"
+

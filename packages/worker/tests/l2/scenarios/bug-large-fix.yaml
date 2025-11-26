@@ -1,0 +1,48 @@
+# L2 Scenario: Bug Requiring Large Fix
+name: bug-large-fix
+level: L2
+type: bug_fix
+mode: mechanic
+
+setup:
+  repo: simple-ts
+  files:
+    - path: src/big-refactor-needed.ts
+      content: |
+        // This file has issues everywhere that would require large changes
+        export function processData(data: any) {
+          // Many lines of problematic code that needs refactoring
+          let result = [];
+          for (let i = 0; i < data.length; i++) {
+            if (data[i].type === 'A') {
+              result.push({ value: data[i].x + data[i].y });
+            } else if (data[i].type === 'B') {
+              result.push({ value: data[i].x - data[i].y });
+            } else if (data[i].type === 'C') {
+              result.push({ value: data[i].x * data[i].y });
+            }
+            // ... many more conditions
+          }
+          return result;
+        }
+
+input:
+  goal: "Refactor the entire processData function to use a strategy pattern and add proper TypeScript types. This requires significant changes across multiple files."
+  constraints:
+    stepCap: 10
+    tokenCap: 30000
+    timeLimitMs: 30000
+
+mockResponses:
+  scenario: escalate
+
+expectations:
+  max_steps: 8
+  must_call:
+    - read_file
+    - request_human_review
+  must_not_call:
+    - commit_changes
+  final_status: waiting_human
+  escalation_reason: "exceeds mechanic limits"
+

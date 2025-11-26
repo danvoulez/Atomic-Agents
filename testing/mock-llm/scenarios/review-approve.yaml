@@ -1,0 +1,31 @@
+# Mock LLM responses for review approve scenario
+name: review-approve
+description: Deterministic responses for approving a clean PR
+
+responses:
+  - thought: "Let me check the current changes by looking at the git diff."
+    tool_calls:
+      - name: get_repo_state
+        arguments: {}
+
+  - thought: "I'll review the changed files one by one."
+    tool_calls:
+      - name: read_file
+        arguments:
+          path: "src/utils.ts"
+
+  - thought: "The code looks clean. Let me run tests to verify."
+    tool_calls:
+      - name: run_tests
+        arguments:
+          scope: "all"
+
+  - thought: "Tests pass and code quality is good. Recording my review."
+    tool_calls:
+      - name: record_review
+        arguments:
+          verdict: "approve"
+          feedback: "Code is clean, well-structured, and tests pass. LGTM."
+
+  - content: "Review complete! I've approved this PR. The code is clean, follows best practices, and all tests pass."
+

@@ -1,0 +1,5 @@
+CREATE TABLE IF NOT EXISTS truth_packs (
+  id UUID PRIMARY KEY,
+  merkle_root TEXT NOT NULL,
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);

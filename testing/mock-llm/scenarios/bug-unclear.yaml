@@ -1,0 +1,20 @@
+# Mock LLM responses for unclear bug scenario
+name: bug-unclear
+description: Responses when the request is too vague to act on
+
+responses:
+  - thought: "The bug description is too vague. I need more information."
+    tool_calls:
+      - name: search_code
+        arguments:
+          query: "error"
+          maxResults: 10
+
+  - thought: "I found multiple potential issues but cannot determine which one the user means. I should ask for clarification."
+    tool_calls:
+      - name: request_human_review
+        arguments:
+          reason: "Ambiguous bug report - multiple potential issues found"
+          context: "Found errors in auth.ts, utils.ts, and api.ts. Please specify which component has the bug."
+          urgency: "medium"
+

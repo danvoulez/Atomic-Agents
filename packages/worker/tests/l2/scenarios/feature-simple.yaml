@@ -1,0 +1,29 @@
+# L2 Scenario: Simple Feature Addition
+name: feature-simple
+level: L2
+type: feature
+mode: mechanic
+
+setup:
+  repo: simple-ts
+
+input:
+  goal: "Add a new function called 'power' that calculates x to the power of y. Include tests for it."
+  constraints:
+    stepCap: 20
+    tokenCap: 40000
+    timeLimitMs: 90000
+
+mockResponses:
+  scenario: feature-simple
+
+expectations:
+  max_steps: 15
+  must_call:
+    - read_file
+    - apply_patch
+    - run_tests
+    - commit_changes
+  final_status: succeeded
+  tests_pass: true
+

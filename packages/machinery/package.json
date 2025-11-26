@@ -1,0 +1,29 @@
+{
+  "name": "@ai-coding-team/machinery",
+  "version": "1.0.0",
+  "type": "module",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "lint": "tsc -p tsconfig.json --noEmit",
+    "test": "echo \"No tests yet\""
+  },
+  "dependencies": {
+    "@ai-coding-team/types": "1.0.0"
+  },
+  "devDependencies": {
+    "typescript": "^5.3.0"
+  },
+  "peerDependencies": {
+    "@ai-coding-team/napi-bindings": "^1.0.0"
+  },
+  "peerDependenciesMeta": {
+    "@ai-coding-team/napi-bindings": {
+      "optional": true
+    }
+  }
+}

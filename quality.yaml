@@ -1,0 +1,16 @@
+profile: strict@1.0
+min_coverage: 0.92
+require_citations: true
+determinism_runs: 5
+max_abstain_rate: 0.02
+min_text_chars: 30
+forbidden_tokens:
+  - "???"
+  - "TODO"
+  - "FIXME"
+checks:
+  - lint_input
+  - coverage_slots
+  - citations_valid
+  - determinism_hash
+  - text_min_size

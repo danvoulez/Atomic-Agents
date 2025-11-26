@@ -1,0 +1,44 @@
+# L4 Resource Limits: Step Starvation
+name: Step Starved Tests
+level: L4
+category: resource_limits
+
+scenarios:
+  - name: "5 step cap"
+    input:
+      goal: "Fix the bug in utils.ts"
+      constraints:
+        stepCap: 5
+    expectations:
+      max_steps: 5
+      behavior: "Should prioritize efficiently"
+      acceptable_outcomes: [succeeded, failed, waiting_human]
+
+  - name: "3 step cap"
+    input:
+      goal: "Analyze the bug"
+      constraints:
+        stepCap: 3
+    expectations:
+      max_steps: 3
+      behavior: "Very limited - should do what's possible"
+
+  - name: "1 step cap"
+    input:
+      goal: "Read a file"
+      constraints:
+        stepCap: 1
+    expectations:
+      max_steps: 1
+      behavior: "Single action only"
+
+  - name: "Step efficiency under pressure"
+    input:
+      goal: "Fix bug, run tests, commit"
+      constraints:
+        stepCap: 4
+    expectations:
+      behavior: "Should skip non-essential steps"
+      must_call: [apply_patch, run_tests]
+      may_skip: [search_code]
+

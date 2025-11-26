@@ -1,0 +1,37 @@
+version: "3.8"
+
+# CI-specific Docker Compose configuration
+# No volumes, optimized for ephemeral CI environments
+# Usage: docker compose -f docker-compose.ci.yml up -d
+
+services:
+  postgres:
+    image: postgres:15-alpine
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: testpassword
+      POSTGRES_DB: ai_coding_team_test
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 2s
+      timeout: 5s
+      retries: 10
+    # No volumes in CI - ephemeral
+
+  mock-llm:
+    build:
+      context: ./testing/mock-llm
+      dockerfile: Dockerfile
+    ports:
+      - "8000:8000"
+    environment:
+      - PORT=8000
+      - SCENARIOS_PATH=/app/scenarios
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost:8000/health"]
+      interval: 2s
+      timeout: 5s
+      retries: 5
+

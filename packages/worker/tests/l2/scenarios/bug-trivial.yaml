@@ -1,0 +1,35 @@
+# L2 Scenario: Trivial Bug Fix
+name: bug-trivial
+level: L2
+type: bug_fix
+mode: mechanic
+
+setup:
+  repo: simple-ts
+  files:
+    - path: src/utils.ts
+      inject_bug: "return x + y"
+
+input:
+  goal: "Fix the multiplication bug in utils.ts. The multiply function incorrectly returns x + y instead of x * y."
+  constraints:
+    stepCap: 15
+    tokenCap: 30000
+    timeLimitMs: 60000
+
+mockResponses:
+  scenario: bug-trivial
+
+expectations:
+  max_steps: 10
+  must_call:
+    - read_file
+    - apply_patch
+    - run_tests
+    - commit_changes
+  must_not_call:
+    - request_human_review
+  final_status: succeeded
+  patch_contains: "return x * y"
+  tests_pass: true
+

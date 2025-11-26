@@ -1,0 +1,345 @@
+# TDLN-OUT Templates: Response Generation
+# Used to convert structured data back to natural language
+
+version: "1.0"
+
+# =============================================================================
+# Job Lifecycle Templates
+# =============================================================================
+templates:
+  # ---------------------------------------------------------------------------
+  # Job Started
+  # ---------------------------------------------------------------------------
+  job_started:
+    description: "When a new job begins processing"
+    template: |
+      Starting {{operation}}: {{goal}}
+    example:
+      operation: "bug_fix"
+      goal: "Fix the login error"
+    output: "Starting bug_fix: Fix the login error"
+
+  job_delegated:
+    description: "When work is delegated to a specialist agent"
+    template: |
+      Delegating to {{agentType}} agent...
+      {{#if constraints}}
+      Constraints: {{#each constraints}}{{@key}}={{this}}{{#unless @last}}, {{/unless}}{{/each}}
+      {{/if}}
+    example:
+      agentType: "planner"
+      constraints:
+        maxFiles: 5
+        mustPassTests: true
+
+  job_progress:
+    description: "Progress update during job execution"
+    template: |
+      {{currentStep}}/{{totalSteps}}: {{action}}
+      {{#if detail}}└─ {{detail}}{{/if}}
+    example:
+      currentStep: 2
+      totalSteps: 5
+      action: "Running tests"
+      detail: "3 passed, 0 failed"
+
+  # ---------------------------------------------------------------------------
+  # Job Complete - Success
+  # ---------------------------------------------------------------------------
+  job_complete_success:
+    description: "When a job completes successfully"
+    template: |
+      ✓ Done! Here's what happened:
+
+      {{#if changes}}
+      **Changes Made:**
+      {{#each changes.files}}
+      • `{{this.path}}`: +{{this.linesAdded}}/-{{this.linesRemoved}} lines
+      {{/each}}
+      {{/if}}
+
+      {{#if tests}}
+      **Tests:** {{tests.passed}} passed{{#if tests.failed}}, {{tests.failed}} failed{{/if}}
+      {{/if}}
+
+      {{#if commit}}
+      **Commit:** `{{commit.hash}}` on branch `{{commit.branch}}`
+      {{/if}}
+
+      {{summary}}
+    example:
+      changes:
+        files:
+          - path: "src/auth.ts"
+            linesAdded: 15
+            linesRemoved: 3
+      tests:
+        passed: 12
+        failed: 0
+      commit:
+        hash: "abc123"
+        branch: "ai/fix-login"
+      summary: "Fixed the authentication bug by updating the token validation logic."
+
+  # ---------------------------------------------------------------------------
+  # Job Complete - Failure
+  # ---------------------------------------------------------------------------
+  job_complete_failure:
+    description: "When a job fails"
+    template: |
+      ✗ The task couldn't be completed.
+
+      **Reason:** {{reason}}
+
+      {{#if error}}
+      **Error:** {{error.message}}
+      {{/if}}
+
+      {{#if suggestion}}
+      **Suggestion:** {{suggestion}}
+      {{/if}}
+
+      {{#if events}}
+      **What happened:**
+      {{#each events}}
+      • {{this.summary}}
+      {{/each}}
+      {{/if}}
+    example:
+      reason: "Tests failed after applying changes"
+      error:
+        message: "AssertionError: expected 'foo' to equal 'bar'"
+      suggestion: "The test expectations may need to be updated"
+
+  job_complete_partial:
+    description: "When a job partially completes"
+    template: |
+      ⚠ Partial completion: {{summary}}
+
+      **Completed:**
+      {{#each completed}}
+      ✓ {{this}}
+      {{/each}}
+
+      **Remaining:**
+      {{#each remaining}}
+      • {{this}}
+      {{/each}}
+
+      {{#if blockedOn}}
+      **Blocked on:** {{blockedOn}}
+      {{/if}}
+
+  # ---------------------------------------------------------------------------
+  # Clarification
+  # ---------------------------------------------------------------------------
+  clarification_needed:
+    description: "When the agent needs user input"
+    template: |
+      I need some clarification:
+
+      {{question}}
+
+      {{#if options}}
+      **Options:**
+      {{#each options}}
+      {{@index}}. {{this}}
+      {{/each}}
+      {{/if}}
+
+      {{#if context}}
+      **Context:** {{context}}
+      {{/if}}
+    example:
+      question: "Which function should I fix?"
+      options:
+        - "handleLogin() in auth.ts"
+        - "validateToken() in token.ts"
+        - "Both"
+      context: "I found multiple functions that could be related to the login bug"
+
+  # ---------------------------------------------------------------------------
+  # Human Review Request
+  # ---------------------------------------------------------------------------
+  human_review_requested:
+    description: "When escalating to human review"
+    template: |
+      🔍 Human review needed
+
+      **Reason:** {{reason}}
+
+      {{#if context}}
+      **Context:**
+      {{context}}
+      {{/if}}
+
+      {{#if options}}
+      **Options:**
+      {{#each options}}
+      • {{this}}
+      {{/each}}
+      {{/if}}
+
+      {{#if blockedOn}}
+      **Blocked on:** {{blockedOn}}
+      {{/if}}
+
+  # =============================================================================
+  # Review Templates
+  # =============================================================================
+  review_approved:
+    description: "When code review approves changes"
+    template: |
+      ✓ Review **APPROVED**
+
+      {{summary}}
+
+      {{#if comments}}
+      **Notes:**
+      {{#each comments}}
+      • `{{this.file}}`{{#if this.line}}:{{this.line}}{{/if}} [{{this.severity}}]: {{this.comment}}
+      {{/each}}
+      {{/if}}
+    example:
+      summary: "Code looks good! The fix addresses the issue correctly."
+      comments:
+        - file: "src/auth.ts"
+          line: 42
+          severity: "suggestion"
+          comment: "Consider adding a comment explaining this logic"
+
+  review_changes_requested:
+    description: "When code review requests changes"
+    template: |
+      ✗ Review: **Changes Requested**
+
+      {{summary}}
+
+      **Issues to address:**
+      {{#each blockers}}
+      {{#if (eq this.severity "critical")}}🔴{{else if (eq this.severity "major")}}🟠{{else}}🟡{{/if}} `{{this.file}}`{{#if this.line}}:{{this.line}}{{/if}}: {{this.issue}}
+      {{#if this.suggestion}}   └─ Suggestion: {{this.suggestion}}{{/if}}
+      {{/each}}
+    example:
+      summary: "A few issues need to be addressed before merging"
+      blockers:
+        - file: "src/auth.ts"
+          line: 15
+          severity: "critical"
+          issue: "Potential security vulnerability: password not hashed"
+          suggestion: "Use bcrypt to hash the password before storing"
+
+  # =============================================================================
+  # Evaluation Templates
+  # =============================================================================
+  evaluation_complete:
+    description: "When job evaluation is complete"
+    template: |
+      📊 **Job Evaluation**
+
+      | Metric | Score |
+      |--------|-------|
+      | Correctness | {{scores.correctness | percent}} |
+      | Efficiency | {{scores.efficiency | percent}} |
+      | Honesty | {{scores.honesty | percent}} |
+      | Safety | {{scores.safety | percent}} |
+      | **Overall** | **{{scores.overall | percent}}** |
+
+      {{#if flags}}
+      **Flags:** {{#each flags}}`{{this}}`{{#unless @last}} {{/unless}}{{/each}}
+      {{/if}}
+
+      **Feedback:** {{feedback}}
+
+      {{#if recommendations}}
+      **Recommendations:**
+      {{#each recommendations}}
+      • {{this}}
+      {{/each}}
+      {{/if}}
+    example:
+      scores:
+        correctness: 0.9
+        efficiency: 0.75
+        honesty: 1.0
+        safety: 0.95
+        overall: 0.89
+      flags:
+        - "over_tool_use"
+      feedback: "Good job overall, but could be more efficient with tool calls"
+      recommendations:
+        - "Cache results from read_file to avoid repeated reads"
+
+  # =============================================================================
+  # Analysis Templates
+  # =============================================================================
+  analysis_complete:
+    description: "When code analysis is complete"
+    template: |
+      📋 **Analysis Complete**
+
+      {{#if rootCause}}
+      **Root Cause:** {{rootCause}}
+      {{/if}}
+
+      {{#if scope}}
+      **Scope:** {{scope}}
+      {{/if}}
+
+      **Affected Files:**
+      {{#each affectedFiles}}
+      • `{{this}}`
+      {{/each}}
+
+      **Assessment:**
+      • Complexity: {{complexity}}
+      • Risk: {{risk}}
+      • Confidence: {{confidence | percent}}
+
+      {{#if evidence}}
+      **Evidence:**
+      {{#each evidence}}
+      > {{this}}
+      {{/each}}
+      {{/if}}
+
+  plan_created:
+    description: "When a plan is created"
+    template: |
+      📝 **Plan: {{title}}**
+
+      **Steps:**
+      {{#each steps}}
+      {{this.stepNumber}}. **{{this.action}}**
+         └─ Expected: {{this.expectedOutcome}}
+         {{#if this.onFailure}}└─ On failure: {{this.onFailure}}{{/if}}
+      {{/each}}
+
+      {{#if constraints}}
+      **Constraints:** {{#each constraints}}{{@key}}={{this}}{{#unless @last}}, {{/unless}}{{/each}}
+      {{/if}}
+
+      {{#if rollbackPlan}}
+      **Rollback:** {{rollbackPlan}}
+      {{/if}}
+
+# =============================================================================
+# Filters / Helpers
+# =============================================================================
+filters:
+  percent:
+    description: "Format number as percentage"
+    example: "0.85 -> 85%"
+  
+  join:
+    description: "Join array with separator"
+    example: "[a, b, c] | join ', ' -> 'a, b, c'"
+
+  truncate:
+    description: "Truncate string to max length"
+    example: "'long text...' | truncate 10 -> 'long text...'"
+
+helpers:
+  eq:
+    description: "Equality comparison for conditionals"
+    usage: "{{#if (eq value 'expected')}}..."

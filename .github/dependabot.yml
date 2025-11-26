@@ -1,0 +1,59 @@
+# Dependabot configuration
+# https://docs.github.com/en/code-security/dependabot/dependabot-version-updates
+
+version: 2
+updates:
+  # npm dependencies
+  - package-ecosystem: "npm"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+    open-pull-requests-limit: 10
+    groups:
+      typescript:
+        patterns:
+          - "typescript*"
+          - "@types/*"
+      testing:
+        patterns:
+          - "vitest*"
+          - "@vitest/*"
+      build:
+        patterns:
+          - "turbo*"
+          - "esbuild*"
+
+  # Rust dependencies
+  - package-ecosystem: "cargo"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+    open-pull-requests-limit: 5
+
+  # GitHub Actions
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+    open-pull-requests-limit: 5
+
+  # Docker
+  - package-ecosystem: "docker"
+    directory: "/packages/worker"
+    schedule:
+      interval: "monthly"
+
+  - package-ecosystem: "docker"
+    directory: "/packages/dashboard"
+    schedule:
+      interval: "monthly"
+
+  # Terraform
+  - package-ecosystem: "terraform"
+    directory: "/infra"
+    schedule:
+      interval: "monthly"
+

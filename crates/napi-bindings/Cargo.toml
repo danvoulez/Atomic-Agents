@@ -1,0 +1,21 @@
+[package]
+name = "napi-bindings"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+license.workspace = true
+
+[lib]
+crate-type = ["cdylib"]
+
+[dependencies]
+napi = { version = "2", features = ["async", "serde-json"] }
+napi-derive = "2"
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+logline = { path = "../logline" }
+tdln-in = { path = "../tdln-in" }
+tdln-out = { path = "../tdln-out" }
+
+[build-dependencies]
+napi-build = "2"

@@ -1,0 +1,12 @@
+{
+  "name": "broken-tests-fixture",
+  "version": "1.0.0",
+  "description": "Fixture with failing tests",
+  "scripts": {
+    "test": "jest"
+  },
+  "devDependencies": {
+    "jest": "^29.7.0"
+  }
+}
+

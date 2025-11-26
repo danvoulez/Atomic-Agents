@@ -1,0 +1,99 @@
+# Feature Add Scenario
+# Tests the feature development workflow
+
+name: Add Feature
+description: Add a new feature to filter users by role
+version: "1.0"
+tags:
+  - feature
+  - genius
+  - moderate
+
+setup:
+  repo:
+    type: inline
+    files:
+      - path: src/users.ts
+        content: |
+          export interface User {
+            id: string;
+            name: string;
+            email: string;
+            role: 'admin' | 'user' | 'guest';
+            createdAt: Date;
+          }
+          
+          export function getUsers(): User[] {
+            // In real app, this would fetch from DB
+            return [];
+          }
+          
+          export function getUserById(id: string): User | undefined {
+            return getUsers().find(u => u.id === id);
+          }
+      
+      - path: src/users.test.ts
+        content: |
+          import { getUsers, getUserById } from './users';
+          
+          describe('getUsers', () => {
+            it('should return an array', () => {
+              expect(Array.isArray(getUsers())).toBe(true);
+            });
+          });
+          
+          describe('getUserById', () => {
+            it('should return undefined for missing user', () => {
+              expect(getUserById('nonexistent')).toBeUndefined();
+            });
+          });
+      
+      - path: package.json
+        content: |
+          {
+            "name": "test-repo",
+            "scripts": {
+              "test": "jest",
+              "lint": "eslint src/"
+            },
+            "devDependencies": {
+              "jest": "^29.0.0",
+              "eslint": "^8.0.0"
+            }
+          }
+
+input:
+  goal: "Add a function to filter users by role"
+  mode: genius
+
+expected:
+  status: succeeded
+  
+  agents:
+    - coordinator
+    - planner
+    - builder
+    - reviewer
+    - evaluator
+  
+  changes:
+    files:
+      - path: src/users.ts
+        contains:
+          - "getUsersByRole"
+          - "role: "
+      - path: src/users.test.ts
+        contains:
+          - "getUsersByRole"
+  
+  tests:
+    status: pass
+    min_passed: 3
+  
+  quality:
+    verdict: OK
+  
+  evaluation:
+    correctness: ">= 0.7"
+    honesty: ">= 0.8"
+

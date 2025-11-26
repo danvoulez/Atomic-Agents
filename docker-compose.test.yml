@@ -1,0 +1,208 @@
+version: "3.8"
+
+# Full test environment for AI Coding Team
+# Usage: docker compose -f docker-compose.test.yml up -d
+
+services:
+  # =============================================================================
+  # Core Infrastructure
+  # =============================================================================
+  
+  postgres:
+    image: postgres:15-alpine
+    container_name: ai-coding-team-test-postgres
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: testpassword
+      POSTGRES_DB: ai_coding_team_test
+    ports:
+      - "55433:5432"
+    volumes:
+      - postgres_test_data:/var/lib/postgresql/data
+      - ./packages/db/migrations:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    networks:
+      - test-network
+
+  # =============================================================================
+  # Application Services
+  # =============================================================================
+  
+  dashboard:
+    build:
+      context: ./packages/dashboard
+      dockerfile: Dockerfile
+    container_name: ai-coding-team-test-dashboard
+    environment:
+      - NODE_ENV=test
+      - DATABASE_URL=postgres://postgres:testpassword@postgres:5432/ai_coding_team_test
+    ports:
+      - "3001:3000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - test-network
+    profiles:
+      - full
+
+  worker-mechanic:
+    build:
+      context: ./packages/worker
+      dockerfile: Dockerfile
+    container_name: ai-coding-team-test-worker-mechanic
+    environment:
+      - WORKER_MODE=mechanic
+      - LLM_PROVIDER=mock
+      - LLM_BASE_URL=http://mock-llm:8000
+      - DATABASE_URL=postgres://postgres:testpassword@postgres:5432/ai_coding_team_test
+      - STEP_CAP=20
+      - TOKEN_CAP=50000
+      - TIME_LIMIT_MS=60000
+    depends_on:
+      postgres:
+        condition: service_healthy
+      mock-llm:
+        condition: service_healthy
+    networks:
+      - test-network
+    profiles:
+      - full
+    deploy:
+      replicas: 2
+
+  worker-genius:
+    build:
+      context: ./packages/worker
+      dockerfile: Dockerfile
+    container_name: ai-coding-team-test-worker-genius
+    environment:
+      - WORKER_MODE=genius
+      - LLM_PROVIDER=mock
+      - LLM_BASE_URL=http://mock-llm:8000
+      - DATABASE_URL=postgres://postgres:testpassword@postgres:5432/ai_coding_team_test
+      - STEP_CAP=100
+      - TOKEN_CAP=200000
+      - TIME_LIMIT_MS=300000
+    depends_on:
+      postgres:
+        condition: service_healthy
+      mock-llm:
+        condition: service_healthy
+    networks:
+      - test-network
+    profiles:
+      - full
+
+  # =============================================================================
+  # Test Infrastructure
+  # =============================================================================
+  
+  mock-llm:
+    build:
+      context: ./testing/mock-llm
+      dockerfile: Dockerfile
+    container_name: ai-coding-team-test-mock-llm
+    ports:
+      - "8000:8000"
+    environment:
+      - PORT=8000
+      - SCENARIOS_PATH=/app/scenarios
+    volumes:
+      - ./testing/mock-llm/scenarios:/app/scenarios:ro
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost:8000/health"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - test-network
+
+  gitea:
+    image: gitea/gitea:1.21-rootless
+    container_name: ai-coding-team-test-gitea
+    environment:
+      - GITEA__database__DB_TYPE=sqlite3
+      - GITEA__server__ROOT_URL=http://localhost:3002
+      - GITEA__server__HTTP_PORT=3000
+      - GITEA__security__INSTALL_LOCK=true
+    ports:
+      - "3002:3000"
+      - "2222:22"
+    volumes:
+      - gitea_data:/var/lib/gitea
+      - ./testing/fixtures/repos:/repos:ro
+    networks:
+      - test-network
+    profiles:
+      - git
+
+  # =============================================================================
+  # Observability (for L3+ tests)
+  # =============================================================================
+  
+  prometheus:
+    image: prom/prometheus:v2.47.0
+    container_name: ai-coding-team-test-prometheus
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./testing/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus_data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+    networks:
+      - test-network
+    profiles:
+      - observability
+
+  grafana:
+    image: grafana/grafana:10.2.0
+    container_name: ai-coding-team-test-grafana
+    ports:
+      - "3003:3000"
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+      - GF_USERS_ALLOW_SIGN_UP=false
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./testing/grafana/dashboards:/etc/grafana/provisioning/dashboards:ro
+      - ./testing/grafana/datasources:/etc/grafana/provisioning/datasources:ro
+    depends_on:
+      - prometheus
+    networks:
+      - test-network
+    profiles:
+      - observability
+
+  # =============================================================================
+  # Database Admin (optional)
+  # =============================================================================
+  
+  adminer:
+    image: adminer:latest
+    container_name: ai-coding-team-test-adminer
+    ports:
+      - "8081:8080"
+    depends_on:
+      - postgres
+    networks:
+      - test-network
+    profiles:
+      - tools
+
+volumes:
+  postgres_test_data:
+  gitea_data:
+  prometheus_data:
+  grafana_data:
+
+networks:
+  test-network:
+    driver: bridge
+

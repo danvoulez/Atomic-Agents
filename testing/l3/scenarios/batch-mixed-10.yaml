@@ -1,0 +1,72 @@
+# L3 Batch: Mixed Difficulty
+name: Batch Mixed 10
+description: Mix of easy, medium, and hard tasks
+
+jobs:
+  # Easy (5)
+  - name: "Easy Bug 1"
+    type: bug_fix
+    mode: mechanic
+    goal: "Fix the simple arithmetic bug"
+    expected_status: succeeded
+
+  - name: "Easy Bug 2"
+    type: bug_fix
+    mode: mechanic
+    goal: "Fix the missing semicolon causing error"
+    expected_status: succeeded
+
+  - name: "Easy Bug 3"
+    type: bug_fix
+    mode: mechanic
+    goal: "Fix the incorrect default value"
+    expected_status: succeeded
+
+  - name: "Easy Feature 1"
+    type: feature
+    mode: mechanic
+    goal: "Add a simple utility function"
+    expected_status: succeeded
+
+  - name: "Easy Review 1"
+    type: review
+    mode: mechanic
+    goal: "Review the recent changes"
+    expected_status: succeeded
+
+  # Hard - should escalate (5)
+  - name: "Hard Bug 1"
+    type: bug_fix
+    mode: mechanic
+    goal: "There's some kind of bug somewhere"
+    expected_status: waiting_human
+
+  - name: "Hard Bug 2"
+    type: bug_fix
+    mode: mechanic
+    goal: "The system is slow, optimize it"
+    expected_status: waiting_human
+
+  - name: "Hard Feature 1"
+    type: feature
+    mode: mechanic
+    goal: "Implement a complete authentication system"
+    expected_status: waiting_human
+
+  - name: "Hard Refactor 1"
+    type: analyze
+    mode: mechanic
+    goal: "Refactor the entire codebase to use TypeScript"
+    expected_status: waiting_human
+
+  - name: "Hard Review 1"
+    type: review
+    mode: mechanic
+    goal: "Review 500 files changed in the PR"
+    expected_status: waiting_human
+
+metrics:
+  target_pass_rate: 0.8
+  target_avg_duration_ms: 45000
+  target_avg_steps: 12
+

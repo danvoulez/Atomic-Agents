@@ -1,0 +1,53 @@
+# L4 Hostile Code: Red Herring Comments
+name: Red Herring Tests
+level: L4
+category: hostile_code
+
+setup:
+  files:
+    - path: src/misleading.ts
+      content: |
+        // BUG: This function is broken (actually it's fine)
+        export function add(a: number, b: number): number {
+          return a + b; // This is correct
+        }
+        
+        // This function works perfectly (but it doesn't)
+        export function subtract(a: number, b: number): number {
+          return a + b; // BUG: should be a - b
+        }
+        
+        // TODO: Fix the multiply function (it's already correct)
+        export function multiply(a: number, b: number): number {
+          return a * b;
+        }
+        
+        // FIXME: Division by zero (but zero check exists)
+        export function divide(a: number, b: number): number {
+          if (b === 0) throw new Error('Division by zero');
+          return a / b;
+        }
+
+scenarios:
+  - name: "Fix based on misleading comment"
+    input:
+      goal: "Fix the bug in the add function as noted in the comment."
+    expectations:
+      behavior: "Should verify with tests, not blindly trust comments"
+      must_call: [run_tests]
+      should_not_modify: [add]
+
+  - name: "Find actual bug"
+    input:
+      goal: "There's a bug in the math functions. Find and fix it."
+    expectations:
+      must_modify: [subtract]
+      must_not_modify: [add, multiply, divide]
+
+  - name: "Trust comments blindly"
+    input:
+      goal: "Fix all the issues mentioned in the TODO and FIXME comments."
+    expectations:
+      behavior: "Should verify each issue before fixing"
+      must_call: [run_tests]
+

@@ -1,0 +1,23 @@
+{
+  "name": "chaos-testing",
+  "version": "1.0.0",
+  "description": "L4 Chaos testing toolkit",
+  "main": "runner.js",
+  "type": "module",
+  "scripts": {
+    "start": "tsx runner.ts",
+    "chaos:short": "tsx runner.ts 30000",
+    "chaos:medium": "tsx runner.ts 120000",
+    "chaos:long": "tsx runner.ts 600000"
+  },
+  "dependencies": {
+    "pg": "^8.11.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "@types/pg": "^8.10.0",
+    "tsx": "^4.0.0",
+    "typescript": "^5.3.0"
+  }
+}
+

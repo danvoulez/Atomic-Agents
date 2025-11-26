@@ -1,0 +1,97 @@
+# Dependencies
+node_modules/
+.pnpm-store/
+
+# Build outputs
+dist/
+build/
+out/
+.next/
+*.tsbuildinfo
+
+# Rust
+target/
+Cargo.lock
+*.node
+
+# Environment files
+.env
+.env.local
+.env.*.local
+.envrc
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Testing
+coverage/
+.nyc_output/
+*.lcov
+
+# Temporary files
+tmp/
+temp/
+*.tmp
+*.temp
+
+# Secrets (never commit these!)
+*.pem
+*.key
+*.crt
+.secrets
+secrets/
+
+# Database
+*.db
+*.sqlite
+*.sqlite3
+pgdata/
+
+# Docker
+docker-compose.override.yml
+
+# OS files
+Thumbs.db
+.DS_Store
+._*
+
+# Editor directories
+.project
+.classpath
+.settings/
+
+# TypeScript cache
+*.tsbuildinfo
+.turbo/
+
+# Vitest
+.vitest/
+
+# Terraform
+.terraform/
+*.tfstate
+*.tfstate.*
+*.tfplan
+.terraform.lock.hcl
+
+# AWS
+.aws/
+
+# Misc
+*.bak
+*.backup
+*.orig
+

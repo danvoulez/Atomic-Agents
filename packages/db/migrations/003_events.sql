@@ -1,0 +1,7 @@
+CREATE TABLE IF NOT EXISTS events (
+  id UUID PRIMARY KEY,
+  job_id UUID REFERENCES jobs(id),
+  kind VARCHAR(30) NOT NULL,
+  summary TEXT,
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);

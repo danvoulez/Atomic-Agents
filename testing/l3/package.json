@@ -1,0 +1,19 @@
+{
+  "name": "l3-test-runner",
+  "version": "1.0.0",
+  "description": "L3 E2E batch test runner",
+  "main": "runner.js",
+  "type": "module",
+  "scripts": {
+    "start": "node runner.js",
+    "batch:easy": "node runner.js --batch easy",
+    "batch:mixed": "node runner.js --batch mixed",
+    "batch:all": "node runner.js --batch all"
+  },
+  "dependencies": {
+    "js-yaml": "^4.1.0",
+    "pg": "^8.11.0",
+    "prom-client": "^15.0.0"
+  }
+}
+
