@@ -50,6 +50,7 @@
     "test:l3": "docker compose -f docker-compose.l3.yml up -d && node testing/l3/runner.js && docker compose -f docker-compose.l3.yml down",
     "test:l4": "docker compose -f docker-compose.l3.yml up -d && node testing/l4/adversarial-runner.js && docker compose -f docker-compose.l3.yml down",
     "test:chaos": "cd testing/l4/chaos && npm start",
+    "test:journeys": "docker compose -f docker-compose.test.yml up -d && vitest run --config vitest.config.journeys.ts && docker compose -f docker-compose.test.yml down",
     "test:all": "pnpm test:l0 && pnpm test:l1 && pnpm test:l2",
     "test:full": "pnpm test:all && pnpm test:l3",
     "test:env:start": "docker compose -f docker-compose.test.yml up -d",
