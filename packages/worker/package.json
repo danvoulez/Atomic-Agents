@@ -10,9 +10,9 @@
   "scripts": {
     "build": "tsc -p tsconfig.json",
     "lint": "tsc -p tsconfig.json --noEmit",
-    "test": "DATABASE_URL=postgres://postgres:testpassword@localhost:55433/ai_coding_team_test vitest run",
-    "test:l0": "DATABASE_URL=postgres://postgres:testpassword@localhost:55433/ai_coding_team_test LLM_PROVIDER=mock MOCK_LLM_URL=http://localhost:8000 vitest run tests/l0",
-    "test:l2": "DATABASE_URL=postgres://postgres:testpassword@localhost:55433/ai_coding_team_test MOCK_LLM_URL=http://localhost:8000 vitest run tests/l2",
+    "test": "DATABASE_URL=postgres://postgres:devpassword@localhost:55432/ai_coding_team vitest run",
+    "test:l0": "DATABASE_URL=postgres://postgres:devpassword@localhost:55432/ai_coding_team LLM_PROVIDER=mock vitest run tests/l0",
+    "test:l2": "DATABASE_URL=postgres://postgres:devpassword@localhost:55432/ai_coding_team vitest run tests/l2",
     "test:github": "vitest run tests/github-auth.test.ts tests/github-integration.test.ts",
     "test:repo-provider": "vitest run tests/repo-provider.test.ts",
     "test:integration": "vitest run tests/github-auth.test.ts tests/github-integration.test.ts tests/repo-provider.test.ts"
