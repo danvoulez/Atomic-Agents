@@ -10,6 +10,7 @@ import { PlannerAgent } from "./planner";
 import { BuilderAgent } from "./builder";
 import { ReviewerAgent } from "./reviewer";
 import { EvaluatorAgent } from "./evaluator";
+import { WatcherAgent } from "./watcher";
 import { BaseAgent } from "./base";
 import { LLMClient } from "./llm";
 import { getToolsForAgent } from "./tools";
@@ -20,9 +21,10 @@ export { BaseAgent, type AgentJob, type AgentResult, type AgentRunOptions } from
 // Specialized agents
 export { CoordinatorAgent } from "./coordinator";
 export { PlannerAgent } from "./planner";
-export { BuilderAgent } from "./builder";
+export { BuilderAgent, type BuilderInput, type BuilderResult, type PlanStep } from "./builder";
 export { ReviewerAgent } from "./reviewer";
-export { EvaluatorAgent } from "./evaluator";
+export { EvaluatorAgent, type EvaluatorInput, type EvaluatorResult, type QualityScores } from "./evaluator";
+export { WatcherAgent, type WatcherInput, type WatcherResult, type Finding } from "./watcher";
 
 // LLM clients
 export {
@@ -144,11 +146,15 @@ export {
   InsightsWatcher,
   getInsightsWatcher,
   startInsightsWatcher,
-  type Insight,
-  type InsightCategory,
-  type WatcherConfig,
-  type ProjectNotes,
-} from "./watcher";
+} from "./watcher/insights";
+
+// Re-export types from insights
+export type {
+  Insight,
+  InsightCategory,
+  WatcherConfig,
+  ProjectNotes,
+} from "./watcher/insights";
 
 // Notifications (TDLN-OUT broadcast)
 export {
@@ -186,6 +192,8 @@ export function createAgent(
       return new ReviewerAgent(llm, tools);
     case "evaluator":
       return new EvaluatorAgent(llm, tools);
+    case "watcher":
+      return new WatcherAgent(llm, tools);
     default:
       throw new Error(`Unknown agent type: ${agentType}`);
   }

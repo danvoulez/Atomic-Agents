@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeAll, afterAll, beforeEach } from 'vitest';
 import { insertJob, insertEvent, listEvents } from '@ai-coding-team/db';
-import { setupTestDatabase, teardownTestDatabase, clearTestData } from '../test-helpers';
+import { setupTestDatabase, teardownTestDatabase, clearTestData, getTestUUID, clearUUIDCache } from '../test-helpers';
 
 /**
  * User Journey: Data Flow Through System
@@ -23,6 +23,7 @@ describe('User Journey: Data Flow', () => {
   });
 
   beforeEach(async () => {
+    clearUUIDCache();
     await clearTestData();
   });
 
@@ -31,7 +32,7 @@ describe('User Journey: Data Flow', () => {
       const jobRequest = {
         goal: 'Add authentication to login page',
         mode: 'mechanic' as const,
-        agent_kind: 'coordinator' as const,
+        agent_kind: 'info' as const,
         status: 'queued' as const,
         conversation_id: null,
         repo_path: '/tmp/test-repo',
@@ -53,7 +54,7 @@ describe('User Journey: Data Flow', () => {
         await insertJob({
           goal: '', // Invalid: empty goal
           mode: 'mechanic',
-          agent_kind: 'coordinator',
+          agent_kind: 'info',
           status: 'queued',
           conversation_id: null,
           repo_path: '/tmp/test-repo',
@@ -69,7 +70,7 @@ describe('User Journey: Data Flow', () => {
       const job1 = await insertJob({
         goal: 'Task 1',
         mode: 'mechanic',
-        agent_kind: 'coordinator',
+        agent_kind: 'info',
         status: 'queued',
         conversation_id: null,
         repo_path: '/tmp/test-repo',
@@ -82,7 +83,7 @@ describe('User Journey: Data Flow', () => {
       const job2 = await insertJob({
         goal: 'Task 2',
         mode: 'mechanic',
-        agent_kind: 'coordinator',
+        agent_kind: 'info',
         status: 'queued',
         conversation_id: null,
         repo_path: '/tmp/test-repo',
@@ -103,7 +104,7 @@ describe('User Journey: Data Flow', () => {
       const job = await insertJob({
         goal: 'Test task',
         mode: 'mechanic',
-        agent_kind: 'coordinator',
+        agent_kind: 'info',
         status: 'queued',
         conversation_id: null,
         repo_path: '/tmp/test-repo',
@@ -127,7 +128,7 @@ describe('User Journey: Data Flow', () => {
       const job = await insertJob({
         goal: 'Test task',
         mode: 'mechanic',
-        agent_kind: 'coordinator',
+        agent_kind: 'info',
         status: 'queued',
         conversation_id: null,
         repo_path: '/tmp/test-repo',
@@ -145,9 +146,9 @@ describe('User Journey: Data Flow', () => {
       const job = await insertJob({
         goal: 'Test task',
         mode: 'genius',
-        agent_kind: 'coordinator',
+        agent_kind: 'info',
         status: 'queued',
-        conversation_id: 'conv-123',
+        conversation_id: getTestUUID('conv-123'),
         repo_path: '/path/to/repo',
         step_cap: 100,
         token_cap: 200000,
@@ -167,7 +168,7 @@ describe('User Journey: Data Flow', () => {
       const job1 = await insertJob({
         goal: 'Task 1',
         mode: 'mechanic',
-        agent_kind: 'coordinator',
+        agent_kind: 'info',
         status: 'queued',
         conversation_id: null,
         repo_path: '/tmp/repo1',
@@ -180,7 +181,7 @@ describe('User Journey: Data Flow', () => {
       const job2 = await insertJob({
         goal: 'Task 2',
         mode: 'mechanic',
-        agent_kind: 'coordinator',
+        agent_kind: 'info',
         status: 'queued',
         conversation_id: null,
         repo_path: '/tmp/repo2',
@@ -201,7 +202,7 @@ describe('User Journey: Data Flow', () => {
       const job = await insertJob({
         goal: 'Test task',
         mode: 'mechanic',
-        agent_kind: 'coordinator',
+        agent_kind: 'info',
         status: 'queued',
         conversation_id: null,
         repo_path: '/tmp/test-repo',
@@ -213,8 +214,8 @@ describe('User Journey: Data Flow', () => {
 
       const event = await insertEvent({
         job_id: job.id,
-        trace_id: 'trace-123',
-        kind: 'planning',
+        trace_id: getTestUUID('trace-123'),
+        kind: 'plan',
         payload: { message: 'Analyzing codebase...' },
         created_at: new Date().toISOString(),
       });
@@ -228,7 +229,7 @@ describe('User Journey: Data Flow', () => {
       const job = await insertJob({
         goal: 'Test task',
         mode: 'mechanic',
-        agent_kind: 'coordinator',
+        agent_kind: 'info',
         status: 'queued',
         conversation_id: null,
         repo_path: '/tmp/test-repo',
@@ -240,7 +241,7 @@ describe('User Journey: Data Flow', () => {
 
       const event = await insertEvent({
         job_id: job.id,
-        trace_id: 'trace-123',
+        trace_id: getTestUUID('trace-123'),
         kind: 'tool_call',
         payload: {
           tool: 'read_file',
@@ -258,7 +259,7 @@ describe('User Journey: Data Flow', () => {
       const job = await insertJob({
         goal: 'Test task',
         mode: 'mechanic',
-        agent_kind: 'coordinator',
+        agent_kind: 'info',
         status: 'queued',
         conversation_id: null,
         repo_path: '/tmp/test-repo',
@@ -270,7 +271,7 @@ describe('User Journey: Data Flow', () => {
 
       const event = await insertEvent({
         job_id: job.id,
-        trace_id: 'trace-123',
+        trace_id: getTestUUID('trace-123'),
         kind: 'tool_result',
         payload: {
           tool: 'read_file',
@@ -287,7 +288,7 @@ describe('User Journey: Data Flow', () => {
       const job = await insertJob({
         goal: 'Test task',
         mode: 'mechanic',
-        agent_kind: 'coordinator',
+        agent_kind: 'info',
         status: 'queued',
         conversation_id: null,
         repo_path: '/tmp/test-repo',
@@ -299,8 +300,8 @@ describe('User Journey: Data Flow', () => {
 
       const event1 = await insertEvent({
         job_id: job.id,
-        trace_id: 'trace-123',
-        kind: 'planning',
+        trace_id: getTestUUID('trace-123'),
+        kind: 'plan',
         payload: { step: 1 },
         created_at: new Date().toISOString(),
       });
@@ -310,7 +311,7 @@ describe('User Journey: Data Flow', () => {
 
       const event2 = await insertEvent({
         job_id: job.id,
-        trace_id: 'trace-123',
+        trace_id: getTestUUID('trace-123'),
         kind: 'tool_call',
         payload: { step: 2 },
         created_at: new Date().toISOString(),
@@ -326,7 +327,7 @@ describe('User Journey: Data Flow', () => {
       const job = await insertJob({
         goal: 'Test task',
         mode: 'mechanic',
-        agent_kind: 'coordinator',
+        agent_kind: 'info',
         status: 'queued',
         conversation_id: null,
         repo_path: '/tmp/test-repo',
@@ -341,7 +342,7 @@ describe('User Journey: Data Flow', () => {
       await insertEvent({
         job_id: job.id,
         trace_id: traceId,
-        kind: 'planning',
+        kind: 'plan',
         payload: {},
         created_at: new Date().toISOString(),
       });
@@ -368,7 +369,7 @@ describe('User Journey: Data Flow', () => {
       const job = await insertJob({
         goal: 'Test task',
         mode: 'mechanic',
-        agent_kind: 'coordinator',
+        agent_kind: 'info',
         status: 'queued',
         conversation_id: null,
         repo_path: '/tmp/test-repo',
@@ -380,8 +381,8 @@ describe('User Journey: Data Flow', () => {
 
       await insertEvent({
         job_id: job.id,
-        trace_id: 'trace-123',
-        kind: 'planning',
+        trace_id: getTestUUID('trace-123'),
+        kind: 'plan',
         payload: {},
         created_at: new Date().toISOString(),
       });
@@ -396,7 +397,7 @@ describe('User Journey: Data Flow', () => {
       const job = await insertJob({
         goal: 'Test task',
         mode: 'mechanic',
-        agent_kind: 'coordinator',
+        agent_kind: 'info',
         status: 'queued',
         conversation_id: null,
         repo_path: '/tmp/test-repo',
@@ -410,7 +411,7 @@ describe('User Journey: Data Flow', () => {
       for (let i = 0; i < 5; i++) {
         await insertEvent({
           job_id: job.id,
-          trace_id: 'trace-123',
+          trace_id: getTestUUID('trace-123'),
           kind: 'tool_call',
           payload: { step: i },
           created_at: new Date().toISOString(),
@@ -425,7 +426,7 @@ describe('User Journey: Data Flow', () => {
       const job = await insertJob({
         goal: 'Test task',
         mode: 'mechanic',
-        agent_kind: 'coordinator',
+        agent_kind: 'info',
         status: 'queued',
         conversation_id: null,
         repo_path: '/tmp/test-repo',
@@ -437,7 +438,7 @@ describe('User Journey: Data Flow', () => {
 
       await insertEvent({
         job_id: job.id,
-        trace_id: 'trace-123',
+        trace_id: getTestUUID('trace-123'),
         kind: 'tool_call',
         payload: {
           tool: 'read_file',
@@ -463,7 +464,7 @@ describe('User Journey: Data Flow', () => {
       const job = await insertJob({
         goal: 'Test task',
         mode: 'mechanic',
-        agent_kind: 'coordinator',
+        agent_kind: 'info',
         status: 'queued',
         conversation_id: null,
         repo_path: '/tmp/test-repo',
@@ -475,8 +476,8 @@ describe('User Journey: Data Flow', () => {
 
       await insertEvent({
         job_id: job.id,
-        trace_id: 'trace-123',
-        kind: 'planning',
+        trace_id: getTestUUID('trace-123'),
+        kind: 'plan',
         payload: {},
         created_at: new Date().toISOString(),
       });
@@ -488,12 +489,12 @@ describe('User Journey: Data Flow', () => {
     });
 
     it('should handle conversation threading', async () => {
-      const conversationId = 'conv-thread-123';
+      const conversationId = getTestUUID('conv-thread-123');
 
       const job1 = await insertJob({
         goal: 'First task in conversation',
         mode: 'mechanic',
-        agent_kind: 'coordinator',
+        agent_kind: 'info',
         status: 'queued',
         conversation_id: conversationId,
         repo_path: '/tmp/test-repo',
@@ -506,7 +507,7 @@ describe('User Journey: Data Flow', () => {
       const job2 = await insertJob({
         goal: 'Second task in conversation',
         mode: 'mechanic',
-        agent_kind: 'coordinator',
+        agent_kind: 'info',
         status: 'queued',
         conversation_id: conversationId,
         repo_path: '/tmp/test-repo',
@@ -525,7 +526,7 @@ describe('User Journey: Data Flow', () => {
       const job = await insertJob({
         goal: 'Test task',
         mode: 'mechanic',
-        agent_kind: 'coordinator',
+        agent_kind: 'info',
         status: 'queued',
         conversation_id: null,
         repo_path: '/tmp/test-repo',

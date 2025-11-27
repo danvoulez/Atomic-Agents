@@ -160,7 +160,7 @@ export async function insertJob(job: JobInput): Promise<JobRow> {
       id,
       traceId,
       job.mode,
-      job.agent_type,
+      job.agent_type ?? "coordinator",
       job.goal,
       job.repo_path,
       job.status ?? "queued",

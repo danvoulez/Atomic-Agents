@@ -1,6 +1,15 @@
 import { defineConfig } from "vitest/config";
+import path from "path";
 
 export default defineConfig({
+  resolve: {
+    alias: {
+      "@ai-coding-team/db": path.resolve(__dirname, "packages/db/dist"),
+      "@ai-coding-team/agents": path.resolve(__dirname, "packages/agents/dist"),
+      "@ai-coding-team/types": path.resolve(__dirname, "packages/types/dist"),
+      "@ai-coding-team/tools": path.resolve(__dirname, "packages/tools/dist"),
+    },
+  },
   test: {
     // Run tests sequentially to avoid database conflicts
     sequence: {

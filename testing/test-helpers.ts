@@ -1,7 +1,34 @@
 import { Pool } from 'pg';
-import { migrate } from '@ai-coding-team/db';
+import { randomUUID } from 'crypto';
 
 let testPool: Pool | null = null;
+
+// UUID cache for consistent trace IDs in tests
+const uuidCache = new Map<string, string>();
+
+/**
+ * Get or create a UUID for a given key (for consistent trace IDs in tests)
+ */
+export function getTestUUID(key: string): string {
+  if (!uuidCache.has(key)) {
+    uuidCache.set(key, randomUUID());
+  }
+  return uuidCache.get(key)!;
+}
+
+/**
+ * Generate a fresh UUID
+ */
+export function generateUUID(): string {
+  return randomUUID();
+}
+
+/**
+ * Clear the UUID cache (call in beforeEach)
+ */
+export function clearUUIDCache(): void {
+  uuidCache.clear();
+}
 
 export async function setupTestDatabase() {
   const databaseUrl = process.env.DATABASE_URL || 'postgresql://postgres:testpassword@localhost:5432/ai_coding_team_test';
@@ -10,11 +37,11 @@ export async function setupTestDatabase() {
     connectionString: databaseUrl,
   });
 
-  // Run migrations
+  // Verify connection (migrations should already be applied via pnpm db:migrate)
   try {
-    await migrate({ connectionString: databaseUrl });
+    await testPool.query('SELECT 1');
   } catch (error) {
-    console.error('Migration failed:', error);
+    console.error('Database connection failed:', error);
     throw error;
   }
 }
@@ -54,6 +81,8 @@ export async function getTestPool(): Promise<Pool> {
  */
 export function createTestJobData(overrides: Partial<any> = {}) {
   return {
+    id: crypto.randomUUID(),
+    trace_id: crypto.randomUUID(),
     goal: 'Test goal',
     mode: 'mechanic' as const,
     agent_type: 'coordinator' as const,
