@@ -56,7 +56,7 @@ jobs:
         working-directory: crates/napi-bindings
         run: pnpm build --target ${{ matrix.target }}
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v5
         with:
           name: bindings-${{ matrix.target }}
           path: crates/napi-bindings/*.node

@@ -74,7 +74,7 @@ jobs:
         run: pnpm test:l1
 
       - name: Upload test results
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         if: always()
         with:
           name: l0-l1-results
@@ -144,7 +144,7 @@ jobs:
           MOCK_LLM_URL: http://localhost:8000
 
       - name: Upload test results
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         if: always()
         with:
           name: l2-results
@@ -197,7 +197,7 @@ jobs:
         run: docker compose -f docker-compose.l3.yml down
 
       - name: Upload results
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         if: always()
         with:
           name: l3-results
@@ -252,7 +252,7 @@ jobs:
         run: docker compose -f docker-compose.l3.yml down
 
       - name: Upload findings
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         if: always()
         with:
           name: l4-findings
