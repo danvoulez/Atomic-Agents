@@ -30,7 +30,7 @@ describe('User Journey: Job Lifecycle', () => {
       const job = await insertJob({
         goal: 'Add a hello world function to src/utils.ts',
         mode: 'mechanic',
-        agent_type: 'coordinator',
+        agent_kind: 'coordinator',
         status: 'queued',
         conversation_id: null,
         repo_path: '/tmp/test-repo',
@@ -54,7 +54,7 @@ describe('User Journey: Job Lifecycle', () => {
         await insertJob({
           goal: '', // Empty goal should fail
           mode: 'mechanic',
-          agent_type: 'coordinator',
+          agent_kind: 'coordinator',
           status: 'queued',
           conversation_id: null,
           repo_path: '/tmp/test-repo',
@@ -70,7 +70,7 @@ describe('User Journey: Job Lifecycle', () => {
       const job = await insertJob({
         goal: 'Test goal',
         mode: 'mechanic',
-        agent_type: 'coordinator',
+        agent_kind: 'coordinator',
         status: 'queued',
         conversation_id: null,
         repo_path: '/tmp/test-repo',
@@ -89,7 +89,7 @@ describe('User Journey: Job Lifecycle', () => {
       const job = await insertJob({
         goal: 'Complex refactoring task',
         mode: 'genius',
-        agent_type: 'coordinator',
+        agent_kind: 'coordinator',
         status: 'queued',
         conversation_id: null,
         repo_path: '/tmp/test-repo',
@@ -110,7 +110,7 @@ describe('User Journey: Job Lifecycle', () => {
       const job = await insertJob({
         goal: 'Test goal',
         mode: 'mechanic',
-        agent_type: 'coordinator',
+        agent_kind: 'coordinator',
         status: 'queued',
         conversation_id: null,
         repo_path: '/tmp/test-repo',
@@ -130,7 +130,7 @@ describe('User Journey: Job Lifecycle', () => {
       const job = await insertJob({
         goal: 'Test goal',
         mode: 'mechanic',
-        agent_type: 'coordinator',
+        agent_kind: 'coordinator',
         status: 'queued',
         conversation_id: null,
         repo_path: '/tmp/test-repo',
@@ -156,7 +156,7 @@ describe('User Journey: Job Lifecycle', () => {
       const job = await insertJob({
         goal: 'Test goal',
         mode: 'mechanic',
-        agent_type: 'coordinator',
+        agent_kind: 'coordinator',
         status: 'queued',
         conversation_id: null,
         repo_path: '/tmp/test-repo',
@@ -174,7 +174,7 @@ describe('User Journey: Job Lifecycle', () => {
       const job = await insertJob({
         goal: 'Test goal',
         mode: 'mechanic',
-        agent_type: 'coordinator',
+        agent_kind: 'coordinator',
         status: 'queued',
         conversation_id: null,
         repo_path: '/tmp/test-repo',
@@ -192,7 +192,7 @@ describe('User Journey: Job Lifecycle', () => {
       const job = await insertJob({
         goal: 'Test goal',
         mode: 'mechanic',
-        agent_type: 'coordinator',
+        agent_kind: 'coordinator',
         status: 'queued',
         conversation_id: null,
         repo_path: '/tmp/test-repo',
@@ -210,7 +210,7 @@ describe('User Journey: Job Lifecycle', () => {
       const job = await insertJob({
         goal: 'Test goal',
         mode: 'mechanic',
-        agent_type: 'coordinator',
+        agent_kind: 'coordinator',
         status: 'queued',
         conversation_id: null,
         repo_path: '/tmp/test-repo',
@@ -230,7 +230,7 @@ describe('User Journey: Job Lifecycle', () => {
       const job = await insertJob({
         goal: 'Test goal',
         mode: 'mechanic',
-        agent_type: 'coordinator',
+        agent_kind: 'coordinator',
         status: 'queued',
         conversation_id: null,
         repo_path: '/tmp/test-repo',
@@ -248,7 +248,7 @@ describe('User Journey: Job Lifecycle', () => {
       const job = await insertJob({
         goal: 'Test goal',
         mode: 'mechanic',
-        agent_type: 'coordinator',
+        agent_kind: 'coordinator',
         status: 'queued',
         conversation_id: null,
         repo_path: '/tmp/test-repo',
@@ -266,7 +266,7 @@ describe('User Journey: Job Lifecycle', () => {
       const job = await insertJob({
         goal: 'Test goal that will fail',
         mode: 'mechanic',
-        agent_type: 'coordinator',
+        agent_kind: 'coordinator',
         status: 'queued',
         conversation_id: null,
         repo_path: '/tmp/test-repo',
@@ -284,7 +284,7 @@ describe('User Journey: Job Lifecycle', () => {
       const job = await insertJob({
         goal: 'Test goal that will fail',
         mode: 'mechanic',
-        agent_type: 'coordinator',
+        agent_kind: 'coordinator',
         status: 'queued',
         conversation_id: null,
         repo_path: '/tmp/test-repo',
@@ -304,7 +304,7 @@ describe('User Journey: Job Lifecycle', () => {
       const job = await insertJob({
         goal: 'Test goal',
         mode: 'mechanic',
-        agent_type: 'coordinator',
+        agent_kind: 'coordinator',
         status: 'queued',
         conversation_id: null,
         repo_path: '/tmp/test-repo',
@@ -315,7 +315,7 @@ describe('User Journey: Job Lifecycle', () => {
       });
 
       // Check that events can be retrieved
-      const events = await listEvents({ jobId: job.id, limit: 100 });
+      const events = await listEvents(job.id);
       expect(Array.isArray(events)).toBe(true);
     });
 
@@ -323,7 +323,7 @@ describe('User Journey: Job Lifecycle', () => {
       const job = await insertJob({
         goal: 'Test goal',
         mode: 'mechanic',
-        agent_type: 'coordinator',
+        agent_kind: 'coordinator',
         status: 'queued',
         conversation_id: null,
         repo_path: '/tmp/test-repo',
@@ -340,7 +340,7 @@ describe('User Journey: Job Lifecycle', () => {
       // 4. tool_call (multiple)
       // 5. tool_result (multiple)
       // 6. completion
-      const events = await listEvents({ jobId: job.id, limit: 100 });
+      const events = await listEvents(job.id);
       expect(Array.isArray(events)).toBe(true);
     });
 
@@ -348,7 +348,7 @@ describe('User Journey: Job Lifecycle', () => {
       const job = await insertJob({
         goal: 'Test goal',
         mode: 'mechanic',
-        agent_type: 'coordinator',
+        agent_kind: 'coordinator',
         status: 'queued',
         conversation_id: null,
         repo_path: '/tmp/test-repo',
@@ -374,7 +374,7 @@ describe('User Journey: Job Lifecycle', () => {
       const job = await insertJob({
         goal: 'Test goal',
         mode: 'mechanic',
-        agent_type: 'coordinator',
+        agent_kind: 'coordinator',
         status: 'queued',
         conversation_id: null,
         repo_path: '/tmp/test-repo',
@@ -396,7 +396,7 @@ describe('User Journey: Job Lifecycle', () => {
       const job = await insertJob({
         goal: 'Test goal',
         mode: 'mechanic',
-        agent_type: 'coordinator',
+        agent_kind: 'coordinator',
         status: 'queued',
         conversation_id: null,
         repo_path: '/tmp/test-repo',

@@ -35,7 +35,7 @@ describe('User Journey: Multi-Agent Collaboration', () => {
       const job = await insertJob({
         goal: userGoal,
         mode: 'genius',
-        agent_type: 'coordinator',
+        agent_kind: 'coordinator',
         status: 'queued',
         conversation_id: null,
         repo_path: '/tmp/test-repo',
@@ -53,7 +53,7 @@ describe('User Journey: Multi-Agent Collaboration', () => {
       const job = await insertJob({
         goal: 'Refactor database queries',
         mode: 'genius',
-        agent_type: 'coordinator',
+        agent_kind: 'coordinator',
         status: 'queued',
         conversation_id: 'conv-456',
         repo_path: '/tmp/test-repo',
@@ -77,7 +77,7 @@ describe('User Journey: Multi-Agent Collaboration', () => {
       const job = await insertJob({
         goal: 'Add feature X',
         mode: 'genius',
-        agent_type: 'coordinator',
+        agent_kind: 'coordinator',
         status: 'queued',
         conversation_id: null,
         repo_path: '/tmp/test-repo',
@@ -90,7 +90,7 @@ describe('User Journey: Multi-Agent Collaboration', () => {
       const event = await insertEvent({
         job_id: job.id,
         trace_id: 'trace-coordinator-1',
-        type: 'planning',
+        kind: 'planning',
         payload: {
           agent: 'coordinator',
           action: 'analyzing_request',
@@ -109,7 +109,7 @@ describe('User Journey: Multi-Agent Collaboration', () => {
       const coordinatorJob = await insertJob({
         goal: 'Refactor authentication system',
         mode: 'genius',
-        agent_type: 'coordinator',
+        agent_kind: 'coordinator',
         status: 'running',
         conversation_id: null,
         repo_path: '/tmp/test-repo',
@@ -123,7 +123,7 @@ describe('User Journey: Multi-Agent Collaboration', () => {
       const delegationEvent = await insertEvent({
         job_id: coordinatorJob.id,
         trace_id: 'trace-coord-123',
-        type: 'agent_delegation',
+        kind: 'agent_delegation',
         payload: {
           from_agent: 'coordinator',
           to_agent: 'planner',
@@ -140,7 +140,7 @@ describe('User Journey: Multi-Agent Collaboration', () => {
       const parentJob = await insertJob({
         goal: 'Refactor authentication system',
         mode: 'genius',
-        agent_type: 'coordinator',
+        agent_kind: 'coordinator',
         status: 'running',
         conversation_id: null,
         repo_path: '/tmp/test-repo',
@@ -154,7 +154,7 @@ describe('User Journey: Multi-Agent Collaboration', () => {
       const plannerJob = await insertJob({
         goal: 'Analyze auth system and create refactoring plan',
         mode: 'genius',
-        agent_type: 'planner',
+        agent_kind: 'planner',
         status: 'queued',
         conversation_id: null,
         repo_path: '/tmp/test-repo',
@@ -173,7 +173,7 @@ describe('User Journey: Multi-Agent Collaboration', () => {
       const parentJob = await insertJob({
         goal: 'Refactor authentication system',
         mode: 'genius',
-        agent_type: 'coordinator',
+        agent_kind: 'coordinator',
         status: 'running',
         conversation_id: null,
         repo_path: '/tmp/test-repo',
@@ -186,7 +186,7 @@ describe('User Journey: Multi-Agent Collaboration', () => {
       const plannerJob = await insertJob({
         goal: 'Analyze auth system',
         mode: 'genius',
-        agent_type: 'planner',
+        agent_kind: 'planner',
         status: 'queued',
         conversation_id: null,
         repo_path: parentJob.repo_path, // Same repo
@@ -206,7 +206,7 @@ describe('User Journey: Multi-Agent Collaboration', () => {
       const plannerJob = await insertJob({
         goal: 'Analyze auth system',
         mode: 'genius',
-        agent_type: 'planner',
+        agent_kind: 'planner',
         status: 'running',
         conversation_id: null,
         repo_path: '/tmp/test-repo',
@@ -220,7 +220,7 @@ describe('User Journey: Multi-Agent Collaboration', () => {
       await insertEvent({
         job_id: plannerJob.id,
         trace_id: 'trace-planner-1',
-        type: 'tool_call',
+        kind: 'tool_call',
         payload: {
           tool: 'read_file',
           params: { path: 'src/auth/login.ts' }
@@ -232,7 +232,7 @@ describe('User Journey: Multi-Agent Collaboration', () => {
       await insertEvent({
         job_id: plannerJob.id,
         trace_id: 'trace-planner-1',
-        type: 'tool_call',
+        kind: 'tool_call',
         payload: {
           tool: 'search_code',
           params: { query: 'authenticate', file_pattern: '*.ts' }
@@ -240,7 +240,7 @@ describe('User Journey: Multi-Agent Collaboration', () => {
         created_at: new Date().toISOString(),
       });
 
-      const events = await listEvents({ jobId: plannerJob.id, limit: 10 });
+      const events = await listEvents(plannerJob.id);
       
       const toolCalls = events.filter(e => e.type === 'tool_call');
       expect(toolCalls.length).toBeGreaterThan(0);
@@ -250,7 +250,7 @@ describe('User Journey: Multi-Agent Collaboration', () => {
       const plannerJob = await insertJob({
         goal: 'Analyze auth system',
         mode: 'genius',
-        agent_type: 'planner',
+        agent_kind: 'planner',
         status: 'running',
         conversation_id: null,
         repo_path: '/tmp/test-repo',
@@ -263,7 +263,7 @@ describe('User Journey: Multi-Agent Collaboration', () => {
       const planEvent = await insertEvent({
         job_id: plannerJob.id,
         trace_id: 'trace-planner-1',
-        type: 'plan_created',
+        kind: 'plan_created',
         payload: {
           plan: {
             steps: [
@@ -288,7 +288,7 @@ describe('User Journey: Multi-Agent Collaboration', () => {
       const plannerJob = await insertJob({
         goal: 'Analyze auth system',
         mode: 'genius',
-        agent_type: 'planner',
+        agent_kind: 'planner',
         status: 'running',
         conversation_id: null,
         repo_path: '/tmp/test-repo',
@@ -301,7 +301,7 @@ describe('User Journey: Multi-Agent Collaboration', () => {
       await insertEvent({
         job_id: plannerJob.id,
         trace_id: 'trace-planner-1',
-        type: 'completion',
+        kind: 'completion',
         payload: {
           status: 'succeeded',
           result: { plan_id: 'plan-abc-123' }
@@ -309,7 +309,7 @@ describe('User Journey: Multi-Agent Collaboration', () => {
         created_at: new Date().toISOString(),
       });
 
-      const events = await listEvents({ jobId: plannerJob.id, limit: 10 });
+      const events = await listEvents(plannerJob.id);
       const completionEvent = events.find(e => e.type === 'completion');
       
       expect(completionEvent).toBeDefined();
@@ -322,7 +322,7 @@ describe('User Journey: Multi-Agent Collaboration', () => {
       const coordinatorJob = await insertJob({
         goal: 'Refactor authentication system',
         mode: 'genius',
-        agent_type: 'coordinator',
+        agent_kind: 'coordinator',
         status: 'running',
         conversation_id: null,
         repo_path: '/tmp/test-repo',
@@ -335,7 +335,7 @@ describe('User Journey: Multi-Agent Collaboration', () => {
       const builderJob = await insertJob({
         goal: 'Implement auth refactoring per plan-abc-123',
         mode: 'genius',
-        agent_type: 'builder',
+        agent_kind: 'builder',
         status: 'queued',
         conversation_id: null,
         repo_path: '/tmp/test-repo',
@@ -354,7 +354,7 @@ describe('User Journey: Multi-Agent Collaboration', () => {
       const builderJob = await insertJob({
         goal: 'Implement per plan-abc-123',
         mode: 'genius',
-        agent_type: 'builder',
+        agent_kind: 'builder',
         status: 'running',
         conversation_id: null,
         repo_path: '/tmp/test-repo',
@@ -367,7 +367,7 @@ describe('User Journey: Multi-Agent Collaboration', () => {
       const contextEvent = await insertEvent({
         job_id: builderJob.id,
         trace_id: 'trace-builder-1',
-        type: 'context_loaded',
+        kind: 'context_loaded',
         payload: {
           plan_id: 'plan-abc-123',
           files_to_modify: ['src/auth/login.ts', 'src/auth/jwt.ts']
@@ -384,7 +384,7 @@ describe('User Journey: Multi-Agent Collaboration', () => {
       const builderJob = await insertJob({
         goal: 'Implement auth refactoring',
         mode: 'genius',
-        agent_type: 'builder',
+        agent_kind: 'builder',
         status: 'running',
         conversation_id: null,
         repo_path: '/tmp/test-repo',
@@ -397,7 +397,7 @@ describe('User Journey: Multi-Agent Collaboration', () => {
       await insertEvent({
         job_id: builderJob.id,
         trace_id: 'trace-builder-1',
-        type: 'tool_call',
+        kind: 'tool_call',
         payload: {
           tool: 'create_branch',
           params: { name: 'refactor-auth-jwt' }
@@ -405,7 +405,7 @@ describe('User Journey: Multi-Agent Collaboration', () => {
         created_at: new Date().toISOString(),
       });
 
-      const events = await listEvents({ jobId: builderJob.id, limit: 10 });
+      const events = await listEvents(builderJob.id);
       const branchEvent = events.find(e => 
         e.type === 'tool_call' && e.payload.tool === 'create_branch'
       );
@@ -417,7 +417,7 @@ describe('User Journey: Multi-Agent Collaboration', () => {
       const builderJob = await insertJob({
         goal: 'Implement auth refactoring',
         mode: 'genius',
-        agent_type: 'builder',
+        agent_kind: 'builder',
         status: 'running',
         conversation_id: null,
         repo_path: '/tmp/test-repo',
@@ -430,7 +430,7 @@ describe('User Journey: Multi-Agent Collaboration', () => {
       await insertEvent({
         job_id: builderJob.id,
         trace_id: 'trace-builder-1',
-        type: 'tool_call',
+        kind: 'tool_call',
         payload: {
           tool: 'apply_patch',
           params: {
@@ -441,7 +441,7 @@ describe('User Journey: Multi-Agent Collaboration', () => {
         created_at: new Date().toISOString(),
       });
 
-      const events = await listEvents({ jobId: builderJob.id, limit: 10 });
+      const events = await listEvents(builderJob.id);
       const patchEvent = events.find(e => 
         e.type === 'tool_call' && e.payload.tool === 'apply_patch'
       );
@@ -453,7 +453,7 @@ describe('User Journey: Multi-Agent Collaboration', () => {
       const builderJob = await insertJob({
         goal: 'Implement auth refactoring',
         mode: 'genius',
-        agent_type: 'builder',
+        agent_kind: 'builder',
         status: 'running',
         conversation_id: null,
         repo_path: '/tmp/test-repo',
@@ -466,7 +466,7 @@ describe('User Journey: Multi-Agent Collaboration', () => {
       await insertEvent({
         job_id: builderJob.id,
         trace_id: 'trace-builder-1',
-        type: 'tool_call',
+        kind: 'tool_call',
         payload: {
           tool: 'run_tests',
           params: { pattern: 'auth/**/*.test.ts' }
@@ -477,7 +477,7 @@ describe('User Journey: Multi-Agent Collaboration', () => {
       await insertEvent({
         job_id: builderJob.id,
         trace_id: 'trace-builder-1',
-        type: 'tool_result',
+        kind: 'tool_result',
         payload: {
           tool: 'run_tests',
           result: { passed: 15, failed: 0, skipped: 0 }
@@ -485,7 +485,7 @@ describe('User Journey: Multi-Agent Collaboration', () => {
         created_at: new Date().toISOString(),
       });
 
-      const events = await listEvents({ jobId: builderJob.id, limit: 10 });
+      const events = await listEvents(builderJob.id);
       const testEvents = events.filter(e => 
         e.payload.tool === 'run_tests'
       );
@@ -497,7 +497,7 @@ describe('User Journey: Multi-Agent Collaboration', () => {
       const builderJob = await insertJob({
         goal: 'Implement auth refactoring',
         mode: 'genius',
-        agent_type: 'builder',
+        agent_kind: 'builder',
         status: 'running',
         conversation_id: null,
         repo_path: '/tmp/test-repo',
@@ -510,7 +510,7 @@ describe('User Journey: Multi-Agent Collaboration', () => {
       await insertEvent({
         job_id: builderJob.id,
         trace_id: 'trace-builder-1',
-        type: 'tool_call',
+        kind: 'tool_call',
         payload: {
           tool: 'commit_changes',
           params: {
@@ -520,7 +520,7 @@ describe('User Journey: Multi-Agent Collaboration', () => {
         created_at: new Date().toISOString(),
       });
 
-      const events = await listEvents({ jobId: builderJob.id, limit: 10 });
+      const events = await listEvents(builderJob.id);
       const commitEvent = events.find(e => 
         e.type === 'tool_call' && e.payload.tool === 'commit_changes'
       );
@@ -534,7 +534,7 @@ describe('User Journey: Multi-Agent Collaboration', () => {
       const coordinatorJob = await insertJob({
         goal: 'Refactor authentication system',
         mode: 'genius',
-        agent_type: 'coordinator',
+        agent_kind: 'coordinator',
         status: 'running',
         conversation_id: null,
         repo_path: '/tmp/test-repo',
@@ -547,7 +547,7 @@ describe('User Journey: Multi-Agent Collaboration', () => {
       const reviewerJob = await insertJob({
         goal: 'Review auth refactoring changes',
         mode: 'genius',
-        agent_type: 'reviewer',
+        agent_kind: 'reviewer',
         status: 'queued',
         conversation_id: null,
         repo_path: '/tmp/test-repo',
@@ -566,7 +566,7 @@ describe('User Journey: Multi-Agent Collaboration', () => {
       const reviewerJob = await insertJob({
         goal: 'Review commit abc123',
         mode: 'genius',
-        agent_type: 'reviewer',
+        agent_kind: 'reviewer',
         status: 'running',
         conversation_id: null,
         repo_path: '/tmp/test-repo',
@@ -579,7 +579,7 @@ describe('User Journey: Multi-Agent Collaboration', () => {
       await insertEvent({
         job_id: reviewerJob.id,
         trace_id: 'trace-reviewer-1',
-        type: 'context_loaded',
+        kind: 'context_loaded',
         payload: {
           commit_sha: 'abc123',
           files_changed: ['src/auth/login.ts', 'src/auth/jwt.ts']
@@ -587,7 +587,7 @@ describe('User Journey: Multi-Agent Collaboration', () => {
         created_at: new Date().toISOString(),
       });
 
-      const events = await listEvents({ jobId: reviewerJob.id, limit: 10 });
+      const events = await listEvents(reviewerJob.id);
       const contextEvent = events.find(e => e.type === 'context_loaded');
       
       expect(contextEvent?.payload).toHaveProperty('commit_sha');
@@ -599,7 +599,7 @@ describe('User Journey: Multi-Agent Collaboration', () => {
       const reviewerJob = await insertJob({
         goal: 'Review auth changes',
         mode: 'genius',
-        agent_type: 'reviewer',
+        agent_kind: 'reviewer',
         status: 'running',
         conversation_id: null,
         repo_path: '/tmp/test-repo',
@@ -612,7 +612,7 @@ describe('User Journey: Multi-Agent Collaboration', () => {
       await insertEvent({
         job_id: reviewerJob.id,
         trace_id: 'trace-reviewer-1',
-        type: 'review_comment',
+        kind: 'review_comment',
         payload: {
           file: 'src/auth/jwt.ts',
           line: 42,
@@ -622,7 +622,7 @@ describe('User Journey: Multi-Agent Collaboration', () => {
         created_at: new Date().toISOString(),
       });
 
-      const events = await listEvents({ jobId: reviewerJob.id, limit: 10 });
+      const events = await listEvents(reviewerJob.id);
       const reviewComments = events.filter(e => e.type === 'review_comment');
       
       expect(reviewComments.length).toBeGreaterThan(0);
@@ -632,7 +632,7 @@ describe('User Journey: Multi-Agent Collaboration', () => {
       const reviewerJob = await insertJob({
         goal: 'Review auth changes',
         mode: 'genius',
-        agent_type: 'reviewer',
+        agent_kind: 'reviewer',
         status: 'running',
         conversation_id: null,
         repo_path: '/tmp/test-repo',
@@ -645,7 +645,7 @@ describe('User Journey: Multi-Agent Collaboration', () => {
       await insertEvent({
         job_id: reviewerJob.id,
         trace_id: 'trace-reviewer-1',
-        type: 'review_decision',
+        kind: 'review_decision',
         payload: {
           decision: 'approved',
           summary: 'Changes look good. Code is clean and tests pass.'
@@ -653,7 +653,7 @@ describe('User Journey: Multi-Agent Collaboration', () => {
         created_at: new Date().toISOString(),
       });
 
-      const events = await listEvents({ jobId: reviewerJob.id, limit: 10 });
+      const events = await listEvents(reviewerJob.id);
       const decision = events.find(e => e.type === 'review_decision');
       
       expect(decision?.payload).toHaveProperty('decision');
@@ -665,7 +665,7 @@ describe('User Journey: Multi-Agent Collaboration', () => {
       const parentJob = await insertJob({
         goal: 'Complex feature',
         mode: 'genius',
-        agent_type: 'coordinator',
+        agent_kind: 'coordinator',
         status: 'running',
         conversation_id: null,
         repo_path: '/tmp/test-repo',
@@ -678,7 +678,7 @@ describe('User Journey: Multi-Agent Collaboration', () => {
       const childJob1 = await insertJob({
         goal: 'Sub-task 1',
         mode: 'genius',
-        agent_type: 'planner',
+        agent_kind: 'planner',
         status: 'succeeded',
         conversation_id: null,
         repo_path: '/tmp/test-repo',
@@ -692,7 +692,7 @@ describe('User Journey: Multi-Agent Collaboration', () => {
       const childJob2 = await insertJob({
         goal: 'Sub-task 2',
         mode: 'genius',
-        agent_type: 'builder',
+        agent_kind: 'builder',
         status: 'running',
         conversation_id: null,
         repo_path: '/tmp/test-repo',
@@ -711,7 +711,7 @@ describe('User Journey: Multi-Agent Collaboration', () => {
       const parentJob = await insertJob({
         goal: 'Complex feature',
         mode: 'genius',
-        agent_type: 'coordinator',
+        agent_kind: 'coordinator',
         status: 'running',
         conversation_id: null,
         repo_path: '/tmp/test-repo',
@@ -730,7 +730,7 @@ describe('User Journey: Multi-Agent Collaboration', () => {
       const coordinatorJob = await insertJob({
         goal: 'Feature request',
         mode: 'genius',
-        agent_type: 'coordinator',
+        agent_kind: 'coordinator',
         status: 'running',
         conversation_id: null,
         repo_path: '/tmp/test-repo',
@@ -744,7 +744,7 @@ describe('User Journey: Multi-Agent Collaboration', () => {
       await insertEvent({
         job_id: coordinatorJob.id,
         trace_id: 'trace-main',
-        type: 'agent_delegation',
+        kind: 'agent_delegation',
         payload: { from: 'coordinator', to: 'planner' },
         created_at: new Date().toISOString(),
       });
@@ -753,7 +753,7 @@ describe('User Journey: Multi-Agent Collaboration', () => {
       await insertEvent({
         job_id: coordinatorJob.id,
         trace_id: 'trace-main',
-        type: 'agent_response',
+        kind: 'agent_response',
         payload: { from: 'planner', to: 'coordinator', data: { plan_id: 'plan-1' } },
         created_at: new Date().toISOString(),
       });
@@ -762,12 +762,12 @@ describe('User Journey: Multi-Agent Collaboration', () => {
       await insertEvent({
         job_id: coordinatorJob.id,
         trace_id: 'trace-main',
-        type: 'agent_delegation',
+        kind: 'agent_delegation',
         payload: { from: 'coordinator', to: 'builder', context: { plan_id: 'plan-1' } },
         created_at: new Date().toISOString(),
       });
 
-      const events = await listEvents({ jobId: coordinatorJob.id, limit: 10 });
+      const events = await listEvents(coordinatorJob.id);
       const delegations = events.filter(e => e.type === 'agent_delegation');
       
       expect(delegations.length).toBe(2);
