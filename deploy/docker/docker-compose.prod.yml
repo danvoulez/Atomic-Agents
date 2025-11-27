@@ -1,0 +1,40 @@
+version: "3.9"
+services:
+  postgres:
+    image: postgres:15-alpine
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: testpassword
+      POSTGRES_DB: ai_coding_team
+    ports:
+      - "55433:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  dashboard:
+    build:
+      context: ../..
+      dockerfile: deploy/docker/Dockerfile.dashboard
+    environment:
+      DATABASE_URL: postgres://postgres:testpassword@postgres:5432/ai_coding_team
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY}
+      NODE_ENV: production
+    depends_on:
+      - postgres
+    ports:
+      - "3000:3000"
+
+  worker:
+    build:
+      context: ../..
+      dockerfile: deploy/docker/Dockerfile.worker
+    environment:
+      DATABASE_URL: postgres://postgres:testpassword@postgres:5432/ai_coding_team
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY}
+      NODE_ENV: production
+    depends_on:
+      - postgres
+
+volumes:
+  postgres_data:
+
