@@ -110,43 +110,32 @@ CREATE INDEX IF NOT EXISTS idx_evaluations_job ON evaluations(job_id);
 CREATE INDEX IF NOT EXISTS idx_evaluations_scores ON evaluations(correctness, efficiency, honesty, safety);
 
 -- ============================================================================
--- Truth packs table (if not exists from migration 004)
+-- Truth packs table - add missing columns from migration 004
 -- ============================================================================
 
-CREATE TABLE IF NOT EXISTS truth_packs (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  
-  -- Content
-  input_raw TEXT NOT NULL,
-  input_normalized TEXT NOT NULL,
-  input_hash VARCHAR(64) NOT NULL,
-  
-  output_logline TEXT NOT NULL,
-  output_hash VARCHAR(64) NOT NULL,
-  
-  -- Translation trace
-  grammar_id VARCHAR(100) NOT NULL,
-  rule_matched VARCHAR(100),
-  entities_captured JSONB DEFAULT '{}'::jsonb,
-  selection_trace TEXT,
-  selection_hash VARCHAR(64),
-  
-  -- Merkle commitment
-  merkle_root VARCHAR(128) NOT NULL,
-  merkle_leaves JSONB NOT NULL,
-  
-  -- Optional signature
-  signature_algorithm VARCHAR(20),
-  signature_public_key TEXT,
-  signature_value TEXT,
-  
-  -- Metadata
-  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-  expires_at TIMESTAMPTZ
-);
+-- Add missing columns to truth_packs (table created in migration 004 with minimal schema)
+ALTER TABLE truth_packs
+  ADD COLUMN IF NOT EXISTS input_raw TEXT,
+  ADD COLUMN IF NOT EXISTS input_normalized TEXT,
+  ADD COLUMN IF NOT EXISTS input_hash VARCHAR(64),
+  ADD COLUMN IF NOT EXISTS output_logline TEXT,
+  ADD COLUMN IF NOT EXISTS output_hash VARCHAR(64),
+  ADD COLUMN IF NOT EXISTS grammar_id VARCHAR(100),
+  ADD COLUMN IF NOT EXISTS rule_matched VARCHAR(100),
+  ADD COLUMN IF NOT EXISTS entities_captured JSONB DEFAULT '{}'::jsonb,
+  ADD COLUMN IF NOT EXISTS selection_trace TEXT,
+  ADD COLUMN IF NOT EXISTS selection_hash VARCHAR(64),
+  ADD COLUMN IF NOT EXISTS merkle_leaves JSONB,
+  ADD COLUMN IF NOT EXISTS signature_algorithm VARCHAR(20),
+  ADD COLUMN IF NOT EXISTS signature_public_key TEXT,
+  ADD COLUMN IF NOT EXISTS signature_value TEXT,
+  ADD COLUMN IF NOT EXISTS expires_at TIMESTAMPTZ;
+
+-- Update merkle_root type if needed (was TEXT in 004, now VARCHAR(128))
+ALTER TABLE truth_packs ALTER COLUMN merkle_root TYPE VARCHAR(128);
 
 CREATE INDEX IF NOT EXISTS idx_truth_packs_merkle ON truth_packs(merkle_root);
-CREATE INDEX IF NOT EXISTS idx_truth_packs_input ON truth_packs(input_hash);
+CREATE INDEX IF NOT EXISTS idx_truth_packs_input ON truth_packs(input_hash) WHERE input_hash IS NOT NULL;
 
 -- Add foreign key from jobs to truth_packs if not exists
 DO $$

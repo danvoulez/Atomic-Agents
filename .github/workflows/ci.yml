@@ -152,3 +152,80 @@ jobs:
         run: pnpm test:integration
         env:
           DATABASE_URL: postgres://postgres:test@localhost:5432/ai_coding_team_test
+
+  # L2 tests with Mock LLM
+  test-l2:
+    name: L2 Tests (Mock LLM)
+    needs: [typescript]
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:15-alpine
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: testpassword
+          POSTGRES_DB: ai_coding_team_test
+        ports:
+          - 55433:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 2s
+          --health-timeout 5s
+          --health-retries 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 8
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'pnpm'
+      - name: Install deps
+        run: pnpm install
+      - name: Start mock-llm
+        run: |
+          cd testing/mock-llm
+          npm ci
+          nohup npm start &
+          sleep 2
+      - name: Migrate DB
+        run: pnpm --filter @ai-coding-team/db migrate
+        env:
+          DATABASE_URL: postgres://postgres:testpassword@localhost:55433/ai_coding_team_test
+      - name: Run L2 tests
+        run: pnpm --filter @ai-coding-team/worker vitest run tests/l2
+        env:
+          DATABASE_URL: postgres://postgres:testpassword@localhost:55433/ai_coding_team_test
+          MOCK_LLM_URL: http://localhost:8000
+
+  # Build and push Docker images
+  build-images:
+    name: Build & Push Images
+    runs-on: ubuntu-latest
+    needs: test-l2
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+          aws-region: ${{ secrets.AWS_REGION }}
+      - uses: aws-actions/amazon-ecr-login@v2
+        id: login-ecr
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 8
+      - name: Build & push dashboard
+        run: |
+          export ECR=${{ steps.login-ecr.outputs.registry }}
+          docker build -t $ECR/${{ secrets.ECR_DASHBOARD_REPO }}:latest -f deploy/docker/Dockerfile.dashboard .
+          docker push $ECR/${{ secrets.ECR_DASHBOARD_REPO }}:latest
+      - name: Build & push worker
+        run: |
+          export ECR=${{ steps.login-ecr.outputs.registry }}
+          docker build -t $ECR/${{ secrets.ECR_WORKER_REPO }}:latest -f deploy/docker/Dockerfile.worker .
+          docker push $ECR/${{ secrets.ECR_WORKER_REPO }}:latest

@@ -1,0 +1,16 @@
+# Worker service image (monorepo)
+FROM node:20-alpine AS deps
+WORKDIR /app
+RUN corepack enable
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml turbo.json tsconfig.base.json ./
+COPY packages ./packages
+RUN pnpm install --frozen-lockfile
+RUN pnpm --filter @ai-coding-team/worker... build
+
+FROM node:20-alpine
+WORKDIR /app
+ENV NODE_ENV=production
+COPY --from=deps /app/packages/worker/dist ./dist
+COPY --from=deps /app/packages/worker/package.json ./package.json
+CMD ["node","dist/loop.js"]
+
