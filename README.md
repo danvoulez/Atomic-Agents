@@ -1,4 +1,4 @@
-# Atomic Agents
+# Atomic✯Agents
 
 > An autonomous AI engineering team that can understand, plan, build, review, and evaluate code changes.
 
