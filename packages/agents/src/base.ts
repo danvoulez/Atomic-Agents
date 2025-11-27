@@ -155,24 +155,35 @@ export abstract class BaseAgent {
 
         // Handle tool calls
         if (response.toolCalls && response.toolCalls.length > 0) {
+          // First, add the assistant message with tool calls (only once for all tool calls)
+          messages.push({
+            role: "assistant",
+            content: response.content || "",
+            tool_calls: response.toolCalls,
+          });
+
+          // Process each tool call and collect results
+          const toolResults: Array<{ tool_call_id: string; name: string; result: unknown }> = [];
+          
           for (const toolCall of response.toolCalls) {
             ctx.budget.stepsRemaining--;
             await this.updateBudget(ctx);
 
             const toolResult = await this.executeToolCall(toolCall, ctx);
-
-            // Add assistant message with tool call
-            messages.push({
-              role: "assistant",
-              content: response.content || "",
-            });
-
-            // Add tool result message
-            messages.push({
-              role: "tool",
-              content: JSON.stringify(toolResult),
+            toolResults.push({
               tool_call_id: toolCall.id,
               name: toolCall.name,
+              result: toolResult,
+            });
+          }
+
+          // Add all tool results as a single message batch
+          for (const tr of toolResults) {
+            messages.push({
+              role: "tool",
+              content: JSON.stringify(tr.result),
+              tool_call_id: tr.tool_call_id,
+              name: tr.name,
             });
           }
         } else {
@@ -375,20 +386,28 @@ ${toolDescriptions}
   private zodToJsonSchema(schema: unknown): ToolSchema["parameters"] {
     // For now, use a simple approach - in production you'd use zod-to-json-schema
     if (schema && typeof schema === "object" && "_def" in schema) {
-      const def = (schema as { _def: { typeName?: string; shape?: () => Record<string, unknown> } })._def;
+      const def = (schema as { 
+        _def: { 
+          typeName?: string; 
+          shape?: () => Record<string, unknown>;
+          innerType?: unknown;
+        } 
+      })._def;
+      
       if (def.typeName === "ZodObject" && def.shape) {
         const shape = def.shape();
         const properties: Record<string, unknown> = {};
         const required: string[] = [];
 
         for (const [key, value] of Object.entries(shape)) {
-          const valueDef = (value as { _def?: { typeName?: string; description?: string } })._def;
-          properties[key] = {
-            type: this.zodTypeToJsonType(valueDef?.typeName),
-            description: valueDef?.description,
-          };
-          // All properties are required by default in Zod
-          required.push(key);
+          const propSchema = this.extractZodProperty(value);
+          properties[key] = propSchema;
+          
+          // Check if optional (ZodOptional wraps the actual type)
+          const valueDef = (value as { _def?: { typeName?: string } })._def;
+          if (valueDef?.typeName !== "ZodOptional") {
+            required.push(key);
+          }
         }
 
         return { type: "object", properties, required };
@@ -396,7 +415,43 @@ ${toolDescriptions}
     }
 
     // Fallback
-    return { type: "object", properties: {} };
+    return { type: "object", properties: {}, required: [] };
+  }
+
+  /**
+   * Extract property schema from a Zod field
+   */
+  private extractZodProperty(value: unknown): { type: string; description?: string; enum?: string[] } {
+    if (!value || typeof value !== "object" || !("_def" in value)) {
+      return { type: "string" };
+    }
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    let def = (value as any)._def;
+    let description: string | undefined;
+    
+    // Unwrap ZodOptional to get the inner type
+    if (def.typeName === "ZodOptional" && def.innerType) {
+      def = def.innerType._def;
+    }
+    
+    // Get description
+    description = def.description;
+
+    // Handle different Zod types
+    if (def.typeName === "ZodEnum" && def.values) {
+      return { type: "string", enum: def.values, description };
+    }
+    
+    if (def.typeName === "ZodObject") {
+      // Nested object - for now just mark as object
+      return { type: "object", description };
+    }
+
+    return { 
+      type: this.zodTypeToJsonType(def.typeName), 
+      description 
+    };
   }
 
   private zodTypeToJsonType(typeName?: string): string {
@@ -409,6 +464,10 @@ ${toolDescriptions}
         return "boolean";
       case "ZodArray":
         return "array";
+      case "ZodObject":
+        return "object";
+      case "ZodEnum":
+        return "string";
       default:
         return "string";
     }

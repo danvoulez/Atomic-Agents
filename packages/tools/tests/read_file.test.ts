@@ -13,7 +13,7 @@ const dummyCtx = {
 
 describe("readFileTool", () => {
   test("reads an existing file", async () => {
-    const result = await readFileTool.execute({ path: "plan.md" }, dummyCtx);
+    const result = await readFileTool.execute({ path: "README.md" }, dummyCtx);
     expect(result.success).toBe(true);
     expect(result.data?.content).toContain("AI Coding Team");
   });

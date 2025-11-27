@@ -1,0 +1,72 @@
+# L2 Scenario: Fix Cascading Bug Across Multiple Files
+#
+# Complex debugging scenario:
+# 1. Bug originates in one file
+# 2. Causes failures in dependent files
+# 3. Requires understanding data flow
+# 4. Multiple files need coordinated fixes
+#
+name: multi-file-bug-cascade
+level: L2
+type: bug_fix
+mode: mechanic
+
+setup:
+  repo: fullstack-api
+
+input:
+  goal: |
+    CASCADING BUG: User deletion is broken and causes data corruption.
+    
+    The bug flow:
+    1. DELETE /users/:id has SQL injection (src/api/users.ts line ~67)
+    2. The query `${req.params.id}' OR '1'='1` would delete ALL users
+    3. No authorization check allows any user to call this
+    4. No audit logging of destructive operations
+    
+    Required fixes (in dependency order):
+    
+    1. src/db/connection.ts:
+       - Add deleteUser(id) with parameterized query
+       - Add transaction support for atomic operations
+       - Add logging for destructive operations
+    
+    2. src/utils/validation.ts:
+       - validateUserId must use proper UUID regex
+       - Add validateAction for audit logging
+    
+    3. src/api/users.ts:
+       - Use deleteUser instead of inline query
+       - Add authorization: only admin or self can delete
+       - Validate userId before using
+       - Return 404 if user doesn't exist
+       - Return 403 if unauthorized
+       - Log the deletion attempt
+    
+    4. Add integration test that:
+       - Verifies non-admin can't delete others
+       - Verifies admin can delete
+       - Verifies self-deletion works
+       - Verifies SQL injection is blocked
+    
+    Coordinate changes so the fix is atomic and doesn't break other features.
+    
+  constraints:
+    stepCap: 45
+    tokenCap: 100000
+    timeLimitMs: 240000
+
+mockResponses:
+  scenario: cascading-bug
+
+expectations:
+  max_steps: 40
+  must_call:
+    - read_file
+    - apply_patch
+    - run_tests
+    - commit_changes
+  final_status: succeeded
+  patch_contains: "deleteUser"
+  tests_pass: true
+

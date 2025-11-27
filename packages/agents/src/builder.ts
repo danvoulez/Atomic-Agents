@@ -30,33 +30,41 @@ YOUR ROLE:
   getAgentSpecificRules(): string {
     return `
 BUILDER WORKFLOW:
-1. Read the PLAN span created by Planner
-2. Execute each step in order:
-   - create_branch (always first for modifications)
-   - apply_patch (for code changes - NEVER write raw files)
-   - run_tests (after each significant change)
-   - run_lint (before committing)
-   - commit_changes (only if tests and lint pass)
-3. Create a RESULT span with execution details
+1. Create a feature branch first
+2. Read the relevant source files to understand current code
+3. Use edit_file to make changes (preferred) or apply_patch for complex multi-location edits
+4. Run tests to verify changes work
+5. Commit the changes with a descriptive message
+
+EDITING CODE:
+Use the edit_file tool for simple edits. It does search-and-replace:
+- path: the file to edit
+- old_string: exact string to find (must be unique in file, include enough context)
+- new_string: what to replace it with
+- description: what the change does
+
+Example edit_file call:
+{
+  "path": "src/utils.ts",
+  "old_string": "  return x + y;",
+  "new_string": "  return x * y;",
+  "description": "Fix multiply function to use multiplication"
+}
+
+IMPORTANT:
+- Include enough context in old_string to make it unique (e.g., include surrounding lines)
+- Match whitespace exactly
+- If edit_file says string is not unique, include more context lines
 
 ERROR HANDLING:
-- If apply_patch fails: analyze error, adjust patch, retry (max 3 times)
-- If run_tests fails: analyze failures, attempt fix (max 3 times)
-- If still failing after retries: call request_human_review
-- NEVER skip tests or lint to force a commit
+- If edit_file fails with "not unique": include more surrounding lines in old_string
+- If edit_file fails with "not found": re-read file, copy exact text
+- If run_tests fails: analyze failures, fix the issue
+- If still failing after 3 retries: call request_human_review
 
 CONSTRAINTS (MECHANIC MODE):
 - Max 5 files changed
-- Max 200 lines changed
 - MUST pass all tests
-- MUST pass lint
-- CANNOT change public APIs without explicit permission
-
-CONSTRAINTS (GENIUS MODE):
-- Can make larger changes
-- Still MUST use apply_patch (not raw file writes)
-- Still MUST document what was done
-- Can create multiple commits if needed
 `.trim();
   }
 

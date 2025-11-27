@@ -1,0 +1,72 @@
+# L2 Scenario: Optimize Database Queries for Performance
+#
+# Performance optimization requiring:
+# 1. Identify N+1 query problems
+# 2. Add connection pooling config
+# 3. Implement query batching
+# 4. Add caching layer
+# 5. Measure and verify improvements
+#
+name: performance-query-optimization
+level: L2
+type: bug_fix
+mode: mechanic
+
+setup:
+  repo: fullstack-api
+
+input:
+  goal: |
+    PERFORMANCE: Database queries are slow and inefficient.
+    
+    Issues to fix:
+    
+    1. src/db/connection.ts:
+       - Add proper pool configuration:
+         - max: 20 connections
+         - idleTimeoutMillis: 30000
+         - connectionTimeoutMillis: 2000
+       - Add connection error handling
+       - Add query timing logs
+    
+    2. Create src/db/queries.ts with optimized queries:
+       - getUserWithProfile: JOIN instead of separate queries
+       - getUsersByIds: Use ANY($1::uuid[]) for batch
+       - searchUsers: Add pagination (LIMIT/OFFSET)
+       - countUsers: Separate count query
+    
+    3. Create src/cache/userCache.ts:
+       - Simple in-memory cache with TTL
+       - Cache user profiles for 5 minutes
+       - Invalidate on update/delete
+       - Cache key format: user:{id}
+    
+    4. Update src/api/users.ts:
+       - Use cached getUser when possible
+       - Add cache-control headers
+       - Implement conditional GET (ETag/If-None-Match)
+    
+    5. Add performance tests:
+       - Measure query time before/after
+       - Test cache hit/miss scenarios
+       - Verify connection pool limits work
+    
+  constraints:
+    stepCap: 45
+    tokenCap: 100000
+    timeLimitMs: 270000
+
+mockResponses:
+  scenario: performance
+
+expectations:
+  max_steps: 40
+  must_call:
+    - read_file
+    - apply_patch
+    - run_tests
+    - commit_changes
+  final_status: succeeded
+  patch_contains: "pool"
+  tests_pass: true
+

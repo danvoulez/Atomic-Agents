@@ -2,13 +2,63 @@
  * LLM Client Interface
  *
  * Provides a unified interface for interacting with different LLM providers
- * (OpenAI, Anthropic, Mock). Supports tool/function calling for agent workflows.
+ * (OpenAI, Anthropic, Google). Supports tool/function calling for agent workflows.
+ * 
+ * Uses Vercel AI SDK for unified provider access with intelligent model selection.
  */
 
 export { OpenAIClient } from "./openai";
 export { AnthropicClient } from "./anthropic";
 export { MockLLMClient, createMockResponse, createMockConversation } from "./mock";
-export { createLLMClient, createLLMClientFromEnv, createTestLLMClient, RECOMMENDED_MODELS } from "./factory";
+export { 
+  createLLMClient, 
+  createLLMClientFromEnv, 
+  createTestLLMClient, 
+  RECOMMENDED_MODELS,
+} from "./factory";
+
+// Unified LLM client (Vercel AI SDK)
+export {
+  UnifiedLLMClient,
+  createUnifiedClient,
+  createClientForMode,
+  createClientWithModel,
+  selectModel,
+  getAvailableModels,
+  MODELS,
+  MODEL_CHARACTERISTICS,
+  calculateCost,
+  getModelPricing,
+  estimateJobCost,
+  formatCost,
+  type UnifiedLLMConfig,
+  type ProviderConfig,
+  type ModelConfig,
+  type TokenUsage,
+  type CostEstimate,
+  type ModelInfo,
+} from "./unified";
+
+// Model Selection Matrix (quick ratings-based selection)
+export {
+  MODEL_PROFILES,
+  PHASE_REQUIREMENTS,
+  TASK_PROFILES,
+  getModelForTask,
+  getModelForPhase,
+  estimateTaskCost,
+  formatCostEstimate,
+  recommend,
+  printModelMatrix,
+  type Rating,
+  type ModelRatings,
+  type ModelProfile,
+  type JobPhase,
+  type PhaseRequirements,
+  type TaskType,
+  type TaskProfile,
+  type ModelRecommendation,
+} from "./model-matrix";
 
 /**
  * Message in a conversation
@@ -18,6 +68,7 @@ export interface Message {
   content: string;
   name?: string; // Tool name for tool messages
   tool_call_id?: string; // For tool response messages
+  tool_calls?: ToolCall[]; // Tool calls made by assistant
 }
 
 /**
@@ -73,7 +124,7 @@ export interface LLMClient {
   /**
    * Provider name
    */
-  readonly provider?: "openai" | "anthropic" | "mock";
+  readonly provider?: "openai" | "anthropic" | "google" | "mock";
 
   /**
    * Model being used

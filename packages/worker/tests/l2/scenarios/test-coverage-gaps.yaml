@@ -1,0 +1,80 @@
+# L2 Scenario: Fill Critical Test Coverage Gaps
+#
+# Test improvement scenario:
+# 1. Analyze existing tests
+# 2. Identify untested code paths
+# 3. Write missing unit tests
+# 4. Add integration tests
+# 5. Test edge cases and error paths
+#
+name: test-coverage-gaps
+level: L2
+type: feature
+mode: mechanic
+
+setup:
+  repo: fullstack-api
+
+input:
+  goal: |
+    TEST COVERAGE: The test suite has many gaps and TODO comments.
+    
+    Review src/api/users.test.ts and implement ALL missing tests:
+    
+    1. POST /register tests:
+       - Valid registration succeeds
+       - Duplicate email returns 409 Conflict
+       - Missing email returns 400
+       - Invalid email format returns 400
+       - Weak password returns 400
+       - SQL injection in email is sanitized
+    
+    2. POST /login tests:
+       - Valid credentials return token
+       - Wrong password returns 401
+       - Non-existent user returns 401 (same message!)
+       - Missing credentials return 400
+       - Token contains correct payload
+       - Constant-time comparison (mock timing)
+    
+    3. GET /profile tests:
+       - Valid token returns profile
+       - Expired token returns 401
+       - Invalid token returns 401
+       - Missing token returns 401
+       - Profile doesn't contain password
+    
+    4. DELETE /:id tests:
+       - Admin can delete any user
+       - User can delete self
+       - User cannot delete others (403)
+       - Non-existent user returns 404
+       - Invalid ID format returns 400
+       - SQL injection blocked
+    
+    5. Edge cases:
+       - Very long email (256+ chars)
+       - Unicode in password
+       - Empty request body
+       - Malformed JSON
+    
+    Use proper mocking and avoid actual DB calls.
+    
+  constraints:
+    stepCap: 50
+    tokenCap: 120000
+    timeLimitMs: 300000
+
+mockResponses:
+  scenario: test-coverage
+
+expectations:
+  max_steps: 45
+  must_call:
+    - read_file
+    - apply_patch
+    - run_tests
+    - commit_changes
+  final_status: succeeded
+  tests_pass: true
+

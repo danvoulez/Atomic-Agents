@@ -1,0 +1,71 @@
+# L2 Scenario: Implement Role-Based Access Control
+#
+# Complex feature requiring:
+# 1. Create new RBAC module
+# 2. Define role hierarchy
+# 3. Implement permission checking
+# 4. Add middleware for routes
+# 5. Fix existing authorization bugs
+# 6. Write comprehensive tests
+#
+name: feature-rbac-system
+level: L2
+type: feature
+mode: mechanic
+
+setup:
+  repo: fullstack-api
+
+input:
+  goal: |
+    FEATURE: Implement Role-Based Access Control (RBAC) system.
+    
+    Requirements:
+    
+    1. Create src/auth/rbac.ts with:
+       - Role enum: 'admin', 'moderator', 'user', 'guest'
+       - Permission type: 'read', 'write', 'delete', 'admin'
+       - Role hierarchy: admin > moderator > user > guest
+       - hasPermission(role, permission) function
+       - canAccessResource(userRole, resourceOwnerRole, action) function
+    
+    2. Create src/middleware/authorize.ts:
+       - requireRole(minRole) middleware factory
+       - requirePermission(permission) middleware factory
+       - requireOwnership() middleware for user's own resources
+    
+    3. Update src/api/users.ts:
+       - GET /users - require 'moderator' role
+       - DELETE /:id - require 'admin' role OR ownership
+       - PUT /:id - require ownership or 'admin'
+       - POST /register - allow all (but rate limit in future)
+    
+    4. Update src/auth/jwt.ts:
+       - Include role in token payload
+       - Add refreshToken function for role changes
+    
+    5. Write tests for:
+       - Role hierarchy works correctly
+       - Unauthorized access returns 403
+       - Admins can access everything
+       - Users can only modify their own data
+       - Token includes correct role
+    
+  constraints:
+    stepCap: 60
+    tokenCap: 150000
+    timeLimitMs: 360000
+
+mockResponses:
+  scenario: feature-rbac
+
+expectations:
+  max_steps: 50
+  must_call:
+    - read_file
+    - apply_patch
+    - run_tests
+    - commit_changes
+  final_status: succeeded
+  tests_pass: true
+

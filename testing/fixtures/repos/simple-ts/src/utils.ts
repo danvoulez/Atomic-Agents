@@ -5,8 +5,7 @@
  * @returns Product of x and y
  */
 export function multiply(x: number, y: number): number {
-  // BUG: This should be multiplication, not addition
-  return x + y;
+  return x * y;
 }
 
 /**

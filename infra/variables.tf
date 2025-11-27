@@ -48,6 +48,12 @@ variable "db_username" {
   default     = "postgres"
 }
 
+variable "db_password" {
+  description = "Database password"
+  type        = string
+  sensitive   = true
+}
+
 # ECS Configuration
 variable "dashboard_cpu" {
   description = "Dashboard task CPU"

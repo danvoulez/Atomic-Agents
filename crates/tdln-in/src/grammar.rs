@@ -32,7 +32,7 @@ pub struct Rule {
     pub mode: String,
     #[serde(default)]
     pub constraints: Option<Constraints>,
-    #[serde(default)]
+    #[serde(default, alias = "readOnly")]
     pub read_only: bool,
 }
 

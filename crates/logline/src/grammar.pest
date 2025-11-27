@@ -1,4 +1,0 @@
-// Placeholder grammar for LogLine. Real implementation should mirror the spec.
-file = { SOI ~ header ~ line* ~ "END" ~ EOI }
-header = { ASCII_ALPHANUMERIC+ ~ ":" ~ ANY* }
-line = { (!"END" ~ ANY)+ }

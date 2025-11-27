@@ -18,6 +18,7 @@ export interface L2Scenario {
   level: "L2";
   type: "bug_fix" | "feature" | "review" | "analyze";
   mode: "mechanic" | "genius";
+  agent_type?: "builder" | "planner" | "reviewer" | "coordinator"; // Which agent to use directly
   
   setup: {
     repo: string;
@@ -53,6 +54,29 @@ export interface L2Scenario {
   };
 }
 
+/**
+ * Determine which agent type to use based on scenario type
+ */
+function getAgentTypeForScenario(scenario: L2Scenario): string {
+  // Use explicit agent_type if specified
+  if (scenario.agent_type) {
+    return scenario.agent_type;
+  }
+  
+  // Default mapping based on scenario type
+  switch (scenario.type) {
+    case "bug_fix":
+    case "feature":
+      return "builder"; // Builder handles code changes directly
+    case "review":
+      return "reviewer";
+    case "analyze":
+      return "planner";
+    default:
+      return "builder";
+  }
+}
+
 export interface L2Result {
   scenario: string;
   passed: boolean;
@@ -83,9 +107,12 @@ export async function setupTestRepo(setup: L2Scenario["setup"]): Promise<string>
   
   // Copy base repo if specified
   if (setup.repo) {
-    const sourceRepo = path.resolve(__dirname, "../../../testing/fixtures/repos", setup.repo);
+    // Fixtures are in the root /testing/fixtures/repos directory
+    const sourceRepo = path.resolve(__dirname, "../../../../testing/fixtures/repos", setup.repo);
     if (fs.existsSync(sourceRepo)) {
       fs.cpSync(sourceRepo, tempDir, { recursive: true });
+    } else {
+      console.warn(`Fixture repo not found: ${sourceRepo}`);
     }
   }
   
@@ -251,7 +278,7 @@ export async function runL2Scenario(scenarioPath: string): Promise<L2Result> {
   // Set up test repo
   const repoPath = await setupTestRepo(scenario.setup);
   
-  // Create job
+  // Create job in database for tracking
   const jobId = await createJob(scenario.input, repoPath, scenario.mode);
   
   // Configure mock LLM if specified
@@ -259,30 +286,28 @@ export async function runL2Scenario(scenarioPath: string): Promise<L2Result> {
     process.env.MOCK_LLM_SCENARIO = scenario.mockResponses.scenario;
   }
   
-  // Run worker to process the job
+  // Determine which agent to use
+  const agentType = getAgentTypeForScenario(scenario);
+  console.log(`Using agent: ${agentType}`);
+  
+  // Run the agent directly using worker.handle()
   const worker = new Worker({ mode: scenario.mode });
-  const loopPromise = worker.startLoop({
-    pollIntervalMs: 50,
-    heartbeatMs: 100,
-    staleAfterMs: 30000,
-  });
   
-  // Wait for job to complete
-  const deadline = Date.now() + 60000; // 1 minute max
-  let job = await getJob(jobId);
-  
-  while (
-    job &&
-    !["succeeded", "failed", "waiting_human", "aborted"].includes(job.status) &&
-    Date.now() < deadline
-  ) {
-    await new Promise(r => setTimeout(r, 100));
-    job = await getJob(jobId);
+  try {
+    // Run the agent directly with the correct type
+    await worker.handle(scenario.input.goal, {
+      id: jobId,
+      traceId: jobId,
+      mode: scenario.mode,
+      repoPath,
+      agentType,
+    });
+  } catch (error) {
+    console.error(`Scenario error:`, error);
   }
   
-  // Stop worker
-  await worker.drain();
-  await loopPromise;
+  // Get final job state
+  let job = await getJob(jobId);
   
   // Collect tool calls from events
   const events = await listEvents(jobId);

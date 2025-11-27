@@ -262,9 +262,9 @@ slots:
 abstain:
   description: "Patterns that should result in ABSTAIN verdict"
   triggers:
-    - too_vague: "Single word with no context"
-    - ambiguous: "Could match multiple operations"
-    - dangerous: "Potentially destructive without clear intent"
+    too_vague: "Single word with no context"
+    ambiguous: "Could match multiple operations"
+    dangerous: "Potentially destructive without clear intent"
   clarification_templates:
     too_vague: "I'm not sure what you'd like me to do with '{input}'. Try: 'fix [bug] in [file]', 'add [feature]', or 'explain [code]'"
     ambiguous: "'{input}' could mean a few things. Did you want me to: {options}"

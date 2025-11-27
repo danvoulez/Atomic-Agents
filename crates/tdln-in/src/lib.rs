@@ -215,6 +215,7 @@ fn build_logline_span(intent: &IntentMatch, original_text: &str) -> LogLineSpan 
         r#type: "operation".to_string(),
         name: Some(intent.rule.clone()),
         params,
+        span: None,
     }
 }
 

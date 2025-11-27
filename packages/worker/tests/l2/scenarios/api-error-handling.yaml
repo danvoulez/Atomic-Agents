@@ -1,0 +1,84 @@
+# L2 Scenario: Implement Comprehensive Error Handling
+#
+# Production-ready error handling:
+# 1. Custom error classes
+# 2. Error middleware
+# 3. Proper HTTP status codes
+# 4. Error logging without sensitive data
+# 5. Client-friendly error messages
+#
+name: api-error-handling
+level: L2
+type: feature
+mode: mechanic
+
+setup:
+  repo: fullstack-api
+
+input:
+  goal: |
+    FEATURE: Implement production-grade error handling.
+    
+    Current problems:
+    - Errors expose internal details (stack traces, SQL errors)
+    - Inconsistent error response format
+    - No distinction between client/server errors
+    - No error logging
+    
+    Implementation:
+    
+    1. Create src/errors/index.ts:
+       ```typescript
+       export class AppError extends Error {
+         statusCode: number;
+         isOperational: boolean;
+         code: string;
+       }
+       
+       export class ValidationError extends AppError { } // 400
+       export class AuthenticationError extends AppError { } // 401  
+       export class AuthorizationError extends AppError { } // 403
+       export class NotFoundError extends AppError { } // 404
+       export class ConflictError extends AppError { } // 409
+       export class RateLimitError extends AppError { } // 429
+       export class InternalError extends AppError { } // 500
+       ```
+    
+    2. Create src/middleware/errorHandler.ts:
+       - Catch all errors
+       - Log server errors with context
+       - Never expose stack traces in production
+       - Return consistent JSON format:
+         { error: { code, message, details? } }
+       - Handle async errors properly
+    
+    3. Update src/api/users.ts:
+       - Replace res.status().json() with throw new XError()
+       - Use appropriate error classes
+       - Add try-catch or asyncHandler wrapper
+    
+    4. Add tests for:
+       - Each error type returns correct status
+       - Error messages don't contain sensitive data
+       - Async errors are caught
+       - Validation errors include field details
+    
+  constraints:
+    stepCap: 40
+    tokenCap: 90000
+    timeLimitMs: 240000
+
+mockResponses:
+  scenario: error-handling
+
+expectations:
+  max_steps: 35
+  must_call:
+    - read_file
+    - apply_patch
+    - run_tests
+    - commit_changes
+  final_status: succeeded
+  patch_contains: "AppError"
+  tests_pass: true
+

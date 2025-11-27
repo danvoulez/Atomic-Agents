@@ -417,7 +417,7 @@ mod tests {
                 lines_removed: 10,
             }),
             budget: None,
-            output: Some("Task completed successfully".to_string()),
+            output: Some("Task completed successfully. All checks passed.".to_string()),
             citations: vec!["cite:0".to_string()],
         };
         

@@ -15,6 +15,7 @@ export { getRepoStateTool, type RepoState } from "./read/get_repo_state";
 
 // WRITE tools
 export { applyPatchTool, type ApplyPatchResult } from "./write/apply_patch";
+export { editFileTool, type EditFileResult } from "./write/edit_file";
 export { createBranchTool, type CreateBranchResult } from "./write/create_branch";
 export { runTestsTool, type TestResult } from "./write/run_tests";
 export { runLintTool, type LintResult, type LintIssue } from "./write/run_lint";
@@ -32,6 +33,7 @@ import { searchCodeTool } from "./read/search_code";
 import { listFilesTool } from "./read/list_files";
 import { getRepoStateTool } from "./read/get_repo_state";
 import { applyPatchTool } from "./write/apply_patch";
+import { editFileTool } from "./write/edit_file";
 import { createBranchTool } from "./write/create_branch";
 import { runTestsTool } from "./write/run_tests";
 import { runLintTool } from "./write/run_lint";
@@ -50,6 +52,7 @@ export const readTools = [
 
 export const writeTools = [
   applyPatchTool,
+  editFileTool,
   createBranchTool,
   runTestsTool,
   runLintTool,

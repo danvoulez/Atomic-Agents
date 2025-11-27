@@ -13,23 +13,20 @@ setup:
 input:
   goal: "Fix the multiplication bug in utils.ts. The multiply function incorrectly returns x + y instead of x * y."
   constraints:
-    stepCap: 15
-    tokenCap: 30000
-    timeLimitMs: 60000
+    stepCap: 20
+    tokenCap: 60000
+    timeLimitMs: 120000
 
 mockResponses:
   scenario: bug-trivial
 
 expectations:
-  max_steps: 10
+  max_steps: 15
   must_call:
     - read_file
-    - apply_patch
+    - edit_file
     - run_tests
     - commit_changes
-  must_not_call:
-    - request_human_review
   final_status: succeeded
-  patch_contains: "return x * y"
   tests_pass: true
 

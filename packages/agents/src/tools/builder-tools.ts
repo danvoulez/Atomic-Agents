@@ -309,6 +309,125 @@ export const applyPatchTool: Tool<ApplyPatchParams, ApplyPatchResult> = {
 };
 
 // =============================================================================
+// edit_file - Simple search and replace (easier than patches for LLMs)
+// =============================================================================
+
+const editFileParams = z.object({
+  path: z.string().describe("Path to the file to edit, relative to repo root"),
+  old_string: z.string().describe("The exact string to find and replace. Must be unique in the file."),
+  new_string: z.string().describe("The string to replace it with"),
+  description: z.string().describe("Brief description of the change"),
+});
+
+type EditFileParams = z.infer<typeof editFileParams>;
+
+interface EditFileResult {
+  success: boolean;
+  path: string;
+  linesChanged: number;
+}
+
+export const editFileTool: Tool<EditFileParams, EditFileResult> = {
+  name: "edit_file",
+  description:
+    "Edit a file by replacing a specific string with another. The old_string must be unique in the file. " +
+    "Include enough context (surrounding lines) to make old_string unique. Use this for simple edits.",
+  category: "MUTATING",
+  paramsSchema: editFileParams,
+  resultSchema: z.object({
+    success: z.boolean(),
+    path: z.string(),
+    linesChanged: z.number(),
+  }),
+  costHint: "cheap",
+  riskHint: "reversible",
+
+  async execute(params, ctx): Promise<ToolResult<EditFileResult>> {
+    try {
+      const filePath = path.join(ctx.repoPath, params.path);
+
+      // Check file exists
+      if (!fs.existsSync(filePath)) {
+        return {
+          success: false,
+          error: {
+            code: "file_not_found",
+            message: `File not found: ${params.path}`,
+            recoverable: true,
+          },
+          eventId: crypto.randomUUID(),
+        };
+      }
+
+      // Read file
+      const content = fs.readFileSync(filePath, "utf-8");
+
+      // Check old_string exists and is unique
+      const occurrences = content.split(params.old_string).length - 1;
+
+      if (occurrences === 0) {
+        return {
+          success: false,
+          error: {
+            code: "string_not_found",
+            message: `The string to replace was not found in ${params.path}. Make sure it matches exactly including whitespace.`,
+            recoverable: true,
+          },
+          eventId: crypto.randomUUID(),
+        };
+      }
+
+      if (occurrences > 1) {
+        return {
+          success: false,
+          error: {
+            code: "string_not_unique",
+            message: `The string appears ${occurrences} times in ${params.path}. Include more surrounding lines to make it unique.`,
+            recoverable: true,
+          },
+          eventId: crypto.randomUUID(),
+        };
+      }
+
+      // Perform replacement
+      const newContent = content.replace(params.old_string, params.new_string);
+
+      // Write file
+      fs.writeFileSync(filePath, newContent);
+
+      // Stage the change
+      try {
+        execSync(`git add "${params.path}"`, { cwd: ctx.repoPath, encoding: "utf-8" });
+      } catch {
+        // Ignore git errors
+      }
+
+      const linesChanged = params.old_string.split("\n").length;
+
+      return {
+        success: true,
+        data: {
+          success: true,
+          path: params.path,
+          linesChanged,
+        },
+        eventId: crypto.randomUUID(),
+      };
+    } catch (error: any) {
+      return {
+        success: false,
+        error: {
+          code: "edit_error",
+          message: error.message,
+          recoverable: true,
+        },
+        eventId: crypto.randomUUID(),
+      };
+    }
+  },
+};
+
+// =============================================================================
 // run_tests - Run the test suite
 // =============================================================================
 
@@ -931,7 +1050,8 @@ export const builderTools = [
   getRepoStateTool,
   // MUTATING
   createBranchTool,
-  applyPatchTool,
+  editFileTool,      // Preferred for simple edits
+  applyPatchTool,    // For complex multi-location edits
   runTestsTool,
   runLintTool,
   commitChangesTool,

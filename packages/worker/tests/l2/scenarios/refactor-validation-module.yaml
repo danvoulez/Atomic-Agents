@@ -1,0 +1,87 @@
+# L2 Scenario: Complete Refactoring of Validation Module
+#
+# Complex refactoring requiring:
+# 1. Fix 10+ bugs in validation functions
+# 2. Add proper TypeScript types
+# 3. Handle edge cases
+# 4. Write comprehensive tests
+# 5. Maintain backwards compatibility
+#
+name: refactor-validation-module
+level: L2
+type: bug_fix
+mode: mechanic
+
+setup:
+  repo: fullstack-api
+
+input:
+  goal: |
+    COMPLETE REFACTORING: The validation module (src/utils/validation.ts) has many bugs.
+    
+    Fix ALL the following issues:
+    
+    1. isValidEmail: Use proper regex for email validation
+       - Must match standard email format (user@domain.tld)
+       - Reject emails without TLD, with spaces, etc.
+    
+    2. isStrongPassword: Enforce real password strength
+       - Minimum 8 characters
+       - At least one uppercase, lowercase, number, special char
+       - Return false for common passwords
+    
+    3. sanitizeInput: Complete XSS prevention
+       - Escape <, >, &, ", '
+       - Handle null/undefined gracefully
+    
+    4. validateUserId: Proper UUID v4 validation
+       - Use regex for UUID format
+       - Return false for empty, null, invalid formats
+    
+    5. parsePositiveInt: Handle edge cases
+       - Return NaN for non-numeric input
+       - Return NaN for negative numbers
+       - Handle floating point by truncating
+    
+    6. truncateString: Fix off-by-one
+       - Return exactly maxLength characters
+       - Add ellipsis if truncated
+    
+    7. formatCurrency: Proper formatting
+       - Handle negative numbers with parentheses
+       - Round to 2 decimal places
+       - Add thousands separator
+    
+    8. calculateDiscount: Validate range
+       - Clamp discount to 0-100%
+       - Return 0 for negative prices
+    
+    9. mergeArrays: Remove duplicates
+       - Use Set for deduplication
+       - Maintain order (first occurrence)
+    
+    10. deepClone: Handle special cases
+        - Handle Date objects
+        - Handle undefined values
+        - Throw on circular references
+    
+    Write tests for ALL edge cases.
+    
+  constraints:
+    stepCap: 50
+    tokenCap: 120000
+    timeLimitMs: 300000
+
+mockResponses:
+  scenario: refactor-validation
+
+expectations:
+  max_steps: 45
+  must_call:
+    - read_file
+    - apply_patch
+    - run_tests
+    - commit_changes
+  final_status: succeeded
+  tests_pass: true
+

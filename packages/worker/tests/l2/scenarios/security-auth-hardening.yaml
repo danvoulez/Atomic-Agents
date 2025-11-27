@@ -1,0 +1,64 @@
+# L2 Scenario: Harden Authentication System
+#
+# Complex multi-file security scenario requiring:
+# 1. Fix hardcoded JWT secret
+# 2. Add token expiration
+# 3. Specify secure algorithm
+# 4. Hash passwords with bcrypt
+# 5. Add rate limiting concept
+# 6. Fix timing attack vulnerability
+#
+name: security-auth-hardening
+level: L2
+type: bug_fix
+mode: mechanic
+
+setup:
+  repo: fullstack-api
+
+input:
+  goal: |
+    SECURITY HARDENING: The authentication system has multiple vulnerabilities.
+    
+    Fix the following issues in order of priority:
+    
+    1. src/auth/jwt.ts:
+       - Move JWT_SECRET to environment variable (process.env.JWT_SECRET)
+       - Add token expiration (expiresIn: '1h')
+       - Specify algorithm: { algorithms: ['HS256'] } in verify
+       - Add proper error handling for expired tokens
+    
+    2. src/db/connection.ts:
+       - Use bcrypt.hash() for password storage in createUser
+       - Never store plain text passwords
+    
+    3. src/api/users.ts:
+       - Use bcrypt.compare() for password verification in login
+       - Implement constant-time comparison to prevent timing attacks
+       - Don't reveal if user exists (same error message)
+       - Remove password from all API responses
+    
+    4. Add tests verifying:
+       - Tokens expire after 1 hour
+       - Passwords are hashed
+       - Login doesn't reveal user existence
+    
+  constraints:
+    stepCap: 40
+    tokenCap: 100000
+    timeLimitMs: 240000
+
+mockResponses:
+  scenario: security-auth
+
+expectations:
+  max_steps: 35
+  must_call:
+    - read_file
+    - apply_patch
+    - run_tests
+    - commit_changes
+  final_status: succeeded
+  patch_contains: "bcrypt"
+  tests_pass: true
+
