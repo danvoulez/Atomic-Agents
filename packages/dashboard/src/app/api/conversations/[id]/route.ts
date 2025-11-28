@@ -13,5 +13,14 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
     timestamp: r.timestamp
   }));
 
-  return NextResponse.json({ id: params.id, messages });
+  const lastActivity = rows.length > 0 ? rows[rows.length - 1].timestamp : new Date().toISOString();
+
+  return NextResponse.json({ 
+    id: params.id, 
+    messages,
+    metadata: {
+      createdAt: new Date().toISOString(), // Need to fetch real created_at in DB later
+      lastActivity
+    }
+  });
 }
