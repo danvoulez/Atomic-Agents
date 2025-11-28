@@ -10,6 +10,10 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
   const stream = new ReadableStream({
     async start(controller) {
       const client = await pool.connect();
+      const send = (data: any) => {
+        controller.enqueue(encoder.encode(`event: message\ndata: ${JSON.stringify(data)}\n\n`));
+      };
+
       await client.query("LISTEN dashboard_events");
 
       client.on("notification", (msg) => {
@@ -19,7 +23,15 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
         if (payload.conversation_id !== conversationId) return;
 
         if (payload.type === 'message' && payload.data.role === 'assistant') {
-          controller.enqueue(encoder.encode(`event: message\ndata: ${JSON.stringify(payload.data)}\n\n`));
+          send({
+            type: 'message',
+            data: {
+              id: payload.data.id,
+              role: 'assistant',
+              content: payload.data.content,
+              timestamp: payload.data.timestamp
+            }
+          });
         }
       });
 

@@ -3,7 +3,7 @@ export interface Task {
   title: string;
   status: 'pending' | 'running' | 'completed' | 'failed';
   repo: string;
-  createdAt: string; // ISO 8601
+  createdAt: string;
   agent?: string;
   budget?: {
     stepsUsed: number;
