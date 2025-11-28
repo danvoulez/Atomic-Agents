@@ -1,108 +1,71 @@
 import { NextRequest } from "next/server";
-import { getJob, listEvents } from "@ai-coding-team/db";
+import { pool, getJob } from "@ai-coding-team/db";
+import { mapStatus } from "@/lib/types";
 
-interface RouteParams {
-  params: { id: string };
-}
+export const dynamic = 'force-dynamic';
 
-// GET /api/jobs/[id]/stream - SSE stream for job updates
-export async function GET(req: NextRequest, { params }: RouteParams) {
-  const { id } = params;
-
-  // Verify job exists
-  const job = await getJob(id);
-  if (!job) {
-    return Response.json({ error: "Job not found" }, { status: 404 });
-  }
-
-  // Create SSE stream
+export async function GET(req: NextRequest, { params }: { params: { id: string } }) {
+  const jobId = params.id;
   const encoder = new TextEncoder();
-  let lastEventCount = 0;
-  let isActive = true;
 
   const stream = new ReadableStream({
     async start(controller) {
-      // Send initial state
-      const sendEvent = (type: string, data: unknown) => {
-        const event = `event: ${type}\ndata: ${JSON.stringify(data)}\n\n`;
-        controller.enqueue(encoder.encode(event));
+      const client = await pool.connect();
+      const send = (type: string, data: any) => {
+        controller.enqueue(encoder.encode(`event: ${type}\ndata: ${JSON.stringify(data)}\n\n`));
       };
 
-      // Send initial job state
-      sendEvent("job", {
-        id: job.id,
-        status: job.status,
-        stepsUsed: job.steps_used ?? 0,
-        tokensUsed: job.tokens_used ?? 0,
-        currentAction: job.current_action,
-      });
+      await client.query("LISTEN dashboard_events");
 
-      // Poll for updates
-      const pollInterval = setInterval(async () => {
-        if (!isActive) {
-          clearInterval(pollInterval);
-          return;
-        }
+      client.on("notification", async (msg) => {
+        if (!msg.payload) return;
+        const payload = JSON.parse(msg.payload);
+        
+        if (payload.job_id !== jobId) return;
 
-        try {
-          const currentJob = await getJob(id);
-          if (!currentJob) {
-            clearInterval(pollInterval);
-            controller.close();
-            return;
-          }
-
-          // Check for new events
-          const events = await listEvents(id);
-          if (events.length > lastEventCount) {
-            const newEvents = events.slice(lastEventCount);
-            for (const event of newEvents) {
-              sendEvent("event", {
-                id: event.id,
-                kind: event.kind,
-                toolName: event.tool_name,
-                summary: event.summary,
-                createdAt: event.created_at,
-              });
-            }
-            lastEventCount = events.length;
-          }
-
-          // Send job update
-          sendEvent("job", {
-            id: currentJob.id,
-            status: currentJob.status,
-            stepsUsed: currentJob.steps_used ?? 0,
-            tokensUsed: currentJob.tokens_used ?? 0,
-            currentAction: currentJob.current_action,
+        if (payload.type === 'event') {
+          send('event', {
+            id: payload.data.id,
+            timestamp: payload.data.created_at,
+            kind: payload.data.kind,
+            summary: payload.data.summary,
+            toolName: payload.data.tool_name
+          });
+        } 
+        
+        const freshJob = await getJob(jobId);
+        if (freshJob) {
+          send('status', {
+            status: mapStatus(freshJob.status),
+            budget: {
+              steps: { used: freshJob.steps_used, max: freshJob.step_cap, percent: Math.round((freshJob.steps_used/freshJob.step_cap)*100) },
+              tokens: { used: freshJob.tokens_used || 0, max: freshJob.token_cap || 0, percent: 0 },
+              costCents: freshJob.cost_used_cents || 0
+            },
+            workerStatus: 'alive'
           });
 
-          // Close stream if job is complete
-          if (["succeeded", "failed", "aborted"].includes(currentJob.status)) {
-            sendEvent("complete", { status: currentJob.status });
-            clearInterval(pollInterval);
-            controller.close();
+          if (freshJob.status === 'succeeded' || freshJob.status === 'failed') {
+             setTimeout(() => {
+               controller.close();
+               client.release();
+             }, 2000);
           }
-        } catch (error) {
-          console.error("SSE poll error:", error);
         }
-      }, 1000); // Poll every second
-
-      // Cleanup on abort
-      req.signal.addEventListener("abort", () => {
-        isActive = false;
-        clearInterval(pollInterval);
-        controller.close();
       });
-    },
+
+      req.signal.addEventListener("abort", () => {
+        client.query("UNLISTEN dashboard_events");
+        client.release();
+      });
+    }
   });
 
   return new Response(stream, {
     headers: {
       "Content-Type": "text/event-stream",
       "Cache-Control": "no-cache",
-      Connection: "keep-alive",
+      "Connection": "keep-alive",
     },
   });
 }
-

@@ -1,88 +1,53 @@
-import { NextRequest } from "next/server";
-import { getJob, listEvents, updateJob, getEvaluation, requestJobCancel } from "@ai-coding-team/db";
+import { NextRequest, NextResponse } from "next/server";
+import { getJob, listEvents, getEvaluation } from "@ai-coding-team/db";
+import { Job, JobEvent, mapStatus } from "@/lib/types";
 
-interface RouteParams {
-  params: { id: string };
-}
+export const dynamic = 'force-dynamic';
 
-// GET /api/jobs/[id] - Get job details with events and evaluation
-export async function GET(req: NextRequest, { params }: RouteParams) {
-  const { id } = params;
-  
-  const job = await getJob(id);
-  if (!job) {
-    return Response.json({ error: "Job not found" }, { status: 404 });
+export async function GET(req: NextRequest, { params }: { params: { id: string } }) {
+  const jobRow = await getJob(params.id);
+  if (!jobRow) {
+    return NextResponse.json({ error: { code: "JOB_NOT_FOUND", message: "Job not found" } }, { status: 404 });
   }
 
-  const events = await listEvents(id);
-  const evaluation = await getEvaluation(id);
+  const eventsRow = await listEvents(params.id);
+  const evalRow = await getEvaluation(params.id);
 
-  // Compute derived fields
-  let duration: number | null = null;
-  if (job.started_at && job.finished_at) {
-    duration = new Date(job.finished_at).getTime() - new Date(job.started_at).getTime();
-  }
-
-  // Calculate progress
-  const stepsUsed = job.steps_used ?? 0;
-  const stepCap = job.step_cap ?? 20;
-  const tokensUsed = job.tokens_used ?? 0;
-  const tokenCap = job.token_cap ?? 100000;
-
-  return Response.json({
-    job: {
-      ...job,
-      duration,
-      progress: {
-        steps: { used: stepsUsed, cap: stepCap, percent: (stepsUsed / stepCap) * 100 },
-        tokens: { used: tokensUsed, cap: tokenCap, percent: (tokensUsed / tokenCap) * 100 },
+  const job: Job = {
+    id: jobRow.id,
+    mode: jobRow.mode,
+    goal: jobRow.goal,
+    status: mapStatus(jobRow.status),
+    worker: jobRow.assigned_to || "waiting...",
+    budget: {
+      steps: {
+        used: jobRow.steps_used,
+        max: jobRow.step_cap,
+        percent: Math.round((jobRow.steps_used / jobRow.step_cap) * 100)
       },
+      tokens: {
+        used: jobRow.tokens_used || 0,
+        max: jobRow.token_cap || 0,
+        percent: Math.round(((jobRow.tokens_used || 0) / (jobRow.token_cap || 1)) * 100)
+      },
+      costCents: jobRow.cost_used_cents || 0
     },
-    events: events.map(e => ({
-      id: e.id,
-      kind: e.kind,
-      toolName: e.tool_name,
-      summary: e.summary,
-      createdAt: e.created_at,
-      durationMs: e.duration_ms,
-    })),
-    evaluation: evaluation ? {
-      id: evaluation.id,
-      correctness: evaluation.correctness,
-      efficiency: evaluation.efficiency,
-      honesty: evaluation.honesty,
-      safety: evaluation.safety,
-      flags: evaluation.flags,
-      feedback: evaluation.feedback,
-      createdAt: evaluation.created_at,
-    } : null,
-  });
-}
-
-// POST /api/jobs/[id]/cancel - Request job cancellation
-export async function POST(req: NextRequest, { params }: RouteParams) {
-  const { id } = params;
-  const url = new URL(req.url);
-  const action = url.pathname.split("/").pop();
-
-  if (action === "cancel") {
-    const job = await getJob(id);
-    if (!job) {
-      return Response.json({ error: "Job not found" }, { status: 404 });
+    evaluation: {
+      correctness: (evalRow?.correctness || 0) * 100,
+      efficiency: (evalRow?.efficiency || 0) * 100,
+      honesty: (evalRow?.honesty || 0) * 100,
+      safety: (evalRow?.safety || 0) * 100,
+      flags: evalRow?.flags || []
     }
+  };
 
-    if (job.status !== "running" && job.status !== "queued") {
-      return Response.json(
-        { error: `Cannot cancel job in status: ${job.status}` },
-        { status: 400 }
-      );
-    }
+  const events: JobEvent[] = eventsRow.map(e => ({
+    id: e.id,
+    timestamp: e.created_at,
+    kind: (['tool_call', 'decision', 'error', 'info'].includes(e.kind) ? e.kind : 'info') as any,
+    summary: e.summary || "",
+    toolName: e.tool_name || undefined
+  }));
 
-    await requestJobCancel(id);
-
-    return Response.json({ status: "cancelling", message: "Cancellation requested" });
-  }
-
-  return Response.json({ error: "Unknown action" }, { status: 400 });
+  return NextResponse.json({ job, events });
 }
-
