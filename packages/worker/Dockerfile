@@ -1,4 +1,4 @@
-FROM node:20-alpine AS base
+FROM node:25-alpine AS base
 
 # 1. Install System Dependencies required by Agent Tools
 # git: for repo operations
