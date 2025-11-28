@@ -1,0 +1,10 @@
+node_modules
+dist
+target
+.turbo
+.next
+.git
+.env
+.DS_Store
+crates/napi-bindings/*.node
+packages/machinery/native/*.node
