@@ -6,9 +6,8 @@
  */
 
 import Anthropic from "@anthropic-ai/sdk";
-// OpenAI and Google SDKs commented out for now
-// import OpenAI from "openai";
-// import { GoogleGenerativeAI, type GenerativeModel } from "@google/generative-ai";
+import OpenAI from "openai";
+import { GoogleGenerativeAI } from "@google/generative-ai";
 import type { LLMClient, Message, ChatOptions, ChatResponse, ToolSchema, ToolCall } from "./index";
 
 // =============================================================================
@@ -213,46 +212,56 @@ export interface UnifiedLLMConfig {
 export class UnifiedLLMClient implements LLMClient {
   readonly provider: Provider;
   readonly model: string;
-  
+
   private anthropic?: Anthropic;
-  // OpenAI and Google clients commented out
-  // private openai?: OpenAI;
-  // private google?: GoogleGenerativeAI;
-  // private googleModel?: GenerativeModel;
+  private openai?: OpenAI;
+  private google?: GoogleGenerativeAI;
   private selection: ModelSelection;
 
   constructor(config: UnifiedLLMConfig = {}) {
-    // Force Anthropic for now
-    const forcedProvider: Provider = "anthropic";
-    
-    this.selection = config.model 
-      ? { provider: forcedProvider, model: config.model, reason: "Explicit model" }
-      : selectModel(config.mode ?? "mechanic", config.taskType, forcedProvider);
-    
-    this.provider = this.selection.provider;
-    this.model = this.selection.model;
+    const anthropicKey = config.apiKeys?.anthropic ?? process.env.ANTHROPIC_API_KEY;
+    const openaiKey = config.apiKeys?.openai ?? process.env.OPENAI_API_KEY;
+    const googleKey = config.apiKeys?.google ?? process.env.GOOGLE_API_KEY ?? process.env.GEMINI_API_KEY;
+
+    if (anthropicKey) this.anthropic = new Anthropic({ apiKey: anthropicKey });
+    if (openaiKey) this.openai = new OpenAI({ apiKey: openaiKey });
+    if (googleKey) this.google = new GoogleGenerativeAI(googleKey);
+
+    if (!this.anthropic && !this.openai && !this.google) {
+      throw new Error("No LLM API keys found. Set ANTHROPIC_API_KEY, OPENAI_API_KEY, or GOOGLE_API_KEY.");
+    }
+
+    const availableProviders: Provider[] = [];
+    if (this.openai) availableProviders.push("openai");
+    if (this.anthropic) availableProviders.push("anthropic");
+    if (this.google) availableProviders.push("google");
+
+    let selectedProvider = config.provider ?? (process.env.LLM_PROVIDER as Provider | undefined);
+    if (selectedProvider && !availableProviders.includes(selectedProvider)) {
+      selectedProvider = undefined;
+    }
+
+    selectedProvider = selectedProvider ?? availableProviders[0];
+
+    let selection: ModelSelection;
+    if (config.model) {
+      selection = { provider: selectedProvider, model: config.model, reason: "Explicit model" };
+    } else {
+      selection = selectModel(config.mode ?? "mechanic", config.taskType, selectedProvider);
+    }
+
+    if (!availableProviders.includes(selection.provider)) {
+      const fallbackProvider = availableProviders[0];
+      selection = config.model
+        ? { provider: fallbackProvider, model: config.model, reason: "Explicit model" }
+        : selectModel(config.mode ?? "mechanic", config.taskType, fallbackProvider);
+    }
+
+    this.selection = selection;
+    this.provider = selection.provider;
+    this.model = selection.model;
 
     console.log(`[UnifiedLLM] Selected: ${this.provider}/${this.model} (${this.selection.reason})`);
-
-    // Initialize Anthropic only
-    const anthropicKey = config.apiKeys?.anthropic ?? process.env.ANTHROPIC_API_KEY;
-
-    if (anthropicKey) {
-      this.anthropic = new Anthropic({ apiKey: anthropicKey });
-    } else {
-      throw new Error("ANTHROPIC_API_KEY is required");
-    }
-    
-    // OpenAI and Google initialization commented out
-    // const openaiKey = config.apiKeys?.openai ?? process.env.OPENAI_API_KEY;
-    // const googleKey = config.apiKeys?.google ?? process.env.GOOGLE_API_KEY ?? process.env.GEMINI_API_KEY;
-    // if (openaiKey && this.provider === "openai") {
-    //   this.openai = new OpenAI({ apiKey: openaiKey });
-    // }
-    // if (googleKey && this.provider === "google") {
-    //   this.google = new GoogleGenerativeAI(googleKey);
-    //   this.googleModel = this.google.getGenerativeModel({ model: this.model });
-    // }
   }
 
   /**
@@ -277,8 +286,11 @@ export class UnifiedLLMClient implements LLMClient {
    * Main chat method - implements LLMClient interface
    */
   async chat(messages: Message[], options?: ChatOptions): Promise<ChatResponse> {
-    // Only Anthropic is supported for now
-    return this.chatAnthropic(messages, options);
+    if (this.provider === "anthropic" && this.anthropic) return this.chatAnthropic(messages, options);
+    if (this.provider === "openai" && this.openai) return this.chatOpenAI(messages, options);
+    if (this.provider === "google" && this.google) return this.chatGoogle(messages, options);
+
+    throw new Error(`Provider ${this.provider} not supported or initialized`);
   }
 
   private async chatAnthropic(messages: Message[], options?: ChatOptions): Promise<ChatResponse> {
@@ -368,9 +380,69 @@ export class UnifiedLLMClient implements LLMClient {
     };
   }
 
-  // OpenAI and Google chat methods commented out for now
-  // private async chatOpenAI(messages: Message[], options?: ChatOptions): Promise<ChatResponse> { ... }
-  // private async chatGoogle(messages: Message[], options?: ChatOptions): Promise<ChatResponse> { ... }
+  private async chatOpenAI(messages: Message[], options?: ChatOptions): Promise<ChatResponse> {
+    if (!this.openai) throw new Error("OpenAI client not initialized");
+
+    const systemMessage = messages.find(m => m.role === "system");
+    const apiMessages = messages
+      .filter(m => m.role !== "system")
+      .map(m => {
+        if (m.role === "tool") {
+          return { role: "tool", tool_call_id: m.tool_call_id!, content: m.content };
+        }
+        const msg: any = { role: m.role, content: m.content };
+        if (m.tool_calls)
+          msg.tool_calls = m.tool_calls.map(tc => ({
+            id: tc.id,
+            type: "function",
+            function: { name: tc.name, arguments: tc.arguments },
+          }));
+        return msg;
+      });
+
+    if (systemMessage) {
+      apiMessages.unshift({ role: "system", content: systemMessage.content });
+    }
+
+    const tools = options?.tools?.map(t => ({
+      type: "function" as const,
+      function: {
+        name: t.name,
+        description: t.description,
+        parameters: t.parameters,
+      },
+    }));
+
+    const response = await this.openai.chat.completions.create({
+      model: this.model,
+      messages: apiMessages as any,
+      tools,
+      max_tokens: options?.maxTokens,
+      temperature: options?.temperature,
+    });
+
+    const choice = response.choices[0];
+
+    return {
+      content: choice.message.content,
+      toolCalls:
+        choice.message.tool_calls?.map(tc => ({
+          id: tc.id,
+          name: tc.function.name,
+          arguments: tc.function.arguments,
+        })) || undefined,
+      finishReason: choice.finish_reason === "tool_calls" ? "tool_calls" : "stop",
+      usage: {
+        promptTokens: response.usage?.prompt_tokens || 0,
+        completionTokens: response.usage?.completion_tokens || 0,
+        totalTokens: response.usage?.total_tokens || 0,
+      },
+    };
+  }
+
+  private async chatGoogle(): Promise<ChatResponse> {
+    throw new Error("Google Gemini implementation pending");
+  }
 
   getSelection(): ModelSelection {
     return this.selection;
