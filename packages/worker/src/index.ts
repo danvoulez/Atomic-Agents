@@ -25,14 +25,15 @@ import {
 import { claimJob } from "./claim";
 import { getLogger } from "./logger";
 import { setupErrorBoundary, safeExecute } from "./error-boundary";
-import { 
-  recordJobClaimed, 
-  recordJobCompleted, 
+import {
+  recordJobClaimed,
+  recordJobCompleted,
   recordJobFailed,
   recordWorkerHeartbeat,
   startMetricsFlushing,
   stopMetricsFlushing,
 } from "./metrics";
+import { getRepoProvider, type RepoInfo, type RepoSource } from "./repo-provider.js";
 
 const logger = getLogger().child({ component: "worker" });
 
@@ -52,6 +53,7 @@ export class Worker {
   private currentJobId?: string;
   private loopPromise?: Promise<void>;
   private workerId: string;
+  private repoProvider = getRepoProvider();
 
   constructor(options: WorkerOptions) {
     this.mode = options.mode;
@@ -167,9 +169,11 @@ export class Worker {
     this.currentJobId = job.id;
     let heartbeatTimer: NodeJS.Timeout | undefined;
     const startTime = Date.now();
-    
-    const jobLogger = logger.child({ 
-      jobId: job.id, 
+    let repoPath = job.repo_path ?? process.cwd();
+    let clonedRepoPath: string | undefined;
+
+    const jobLogger = logger.child({
+      jobId: job.id,
       traceId: job.trace_id,
       mode: job.mode,
     });
@@ -194,6 +198,25 @@ export class Worker {
         heartbeatMs
       );
 
+      if (this.isRemoteRepoPath(job.repo_path)) {
+        const { repoInfo, source } = this.getRepoInfoFromUrl(job.repo_path);
+        this.repoProvider.setSource(source);
+
+        jobLogger.info("Cloning remote repository", {
+          repoUrl: job.repo_path,
+          source,
+        });
+
+        const cloneResult = await this.repoProvider.clone(job.id, repoInfo);
+        repoPath = cloneResult.path;
+        clonedRepoPath = cloneResult.path;
+
+        jobLogger.info("Repository cloned", {
+          repoPath,
+          branch: cloneResult.branch,
+        });
+      }
+
       // Build agent job
       const agentType = job.agent_type ?? "coordinator";
       const agentJob: AgentJob = {
@@ -202,7 +225,7 @@ export class Worker {
         mode: job.mode as "mechanic" | "genius",
         agentType,
         goal: job.goal,
-        repoPath: job.repo_path ?? process.cwd(),
+        repoPath,
         stepCap: job.step_cap ?? 20,
         tokenCap: job.token_cap ?? 100000,
         timeLimitMs: job.mode === "mechanic" ? 60000 : 300000,
@@ -266,8 +289,51 @@ export class Worker {
       });
     } finally {
       if (heartbeatTimer) clearInterval(heartbeatTimer);
+
+      if (clonedRepoPath) {
+        const repoPathToCleanup = clonedRepoPath;
+        await safeExecute(() => this.repoProvider.cleanup(repoPathToCleanup));
+      }
+
       this.currentJobId = undefined;
     }
+  }
+
+  private isRemoteRepoPath(repoPath?: string | null): repoPath is string {
+    if (!repoPath) return false;
+    return (
+      repoPath.startsWith("http") ||
+      repoPath.startsWith("git@") ||
+      repoPath.startsWith("ssh://")
+    );
+  }
+
+  private getRepoInfoFromUrl(repoUrl: string): {
+    repoInfo: RepoInfo;
+    source: RepoSource;
+  } {
+    const normalizedUrl = repoUrl.startsWith("git@")
+      ? repoUrl.replace(/^git@([^:]+):/, "ssh://git@$1/")
+      : repoUrl;
+    const parsed = new URL(normalizedUrl);
+    const [, owner, repo] = parsed.pathname.split("/").filter(Boolean);
+    const name = repo?.replace(/\.git$/, "") ?? owner ?? "repository";
+    const source: RepoSource = parsed.hostname.includes("lab512")
+      ? "lab512"
+      : "github";
+
+    return {
+      source,
+      repoInfo: {
+        name,
+        source,
+        cloneUrl: repoUrl,
+        htmlUrl: repoUrl,
+        description: "",
+        defaultBranch: "main",
+        private: false,
+      },
+    };
   }
 
   /**
