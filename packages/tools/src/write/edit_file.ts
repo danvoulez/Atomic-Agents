@@ -43,7 +43,21 @@ export const editFileTool: Tool<EditFileParams, EditFileResult> = {
 
   async execute(params, ctx): Promise<ToolResult<EditFileResult>> {
     try {
-      const filePath = path.join(ctx.repoPath, params.path);
+      const filePath = path.resolve(ctx.repoPath, params.path);
+
+      // Security: Prevent path traversal attacks
+      const normalizedRepoPath = path.resolve(ctx.repoPath);
+      if (!filePath.startsWith(normalizedRepoPath + path.sep) && filePath !== normalizedRepoPath) {
+        return {
+          success: false,
+          error: {
+            code: "access_denied",
+            message: "Access Denied: Path traversal detected. Cannot modify files outside the repository.",
+            recoverable: false,
+          },
+          eventId: crypto.randomUUID(),
+        };
+      }
 
       // Check file exists
       if (!fs.existsSync(filePath)) {

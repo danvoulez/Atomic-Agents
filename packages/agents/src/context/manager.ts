@@ -270,6 +270,73 @@ export class ContextManager {
 }
 
 /**
+ * Summarize conversation history for context compression
+ *
+ * Algorithm (per spec):
+ * 1. Keep System Prompt
+ * 2. Keep Last 5 messages (User/Assistant)
+ * 3. For messages 6-100 (Middle), replace Tool Outputs with:
+ *    `[Tool 'read_file' executed successfully. Output size: 500 chars]`
+ *
+ * This reduces context size while preserving the conversation flow.
+ */
+export function summarizeHistory(messages: Message[], keepLast: number = 5): Message[] {
+  const result: Message[] = [];
+
+  // 1. Keep system prompt(s)
+  const systemMessages = messages.filter(m => m.role === "system");
+  result.push(...systemMessages);
+
+  // 2. Get non-system messages
+  const nonSystem = messages.filter(m => m.role !== "system");
+
+  if (nonSystem.length <= keepLast) {
+    // Not enough messages to compress
+    return messages;
+  }
+
+  // Split into middle (to compress) and recent (to keep)
+  const middleMessages = nonSystem.slice(0, -keepLast);
+  const recentMessages = nonSystem.slice(-keepLast);
+
+  // 3. Compress middle messages - replace tool outputs with summaries
+  for (const msg of middleMessages) {
+    if (msg.role === "tool") {
+      // Replace tool output with compact summary
+      const toolName = msg.name ?? "unknown_tool";
+      const outputSize = msg.content.length;
+      const success = msg.content.includes('"success":true') || msg.content.includes('"success": true');
+      const status = success ? "successfully" : "with error";
+
+      result.push({
+        ...msg,
+        content: `[Tool '${toolName}' executed ${status}. Output size: ${outputSize} chars]`,
+      });
+    } else if (msg.role === "assistant" && msg.tool_calls?.length) {
+      // Keep assistant messages with tool calls but truncate content
+      result.push({
+        ...msg,
+        content: msg.content ? msg.content.slice(0, 200) + (msg.content.length > 200 ? "..." : "") : "",
+      });
+    } else {
+      // Keep user and regular assistant messages but truncate if long
+      const maxLen = 500;
+      result.push({
+        ...msg,
+        content: msg.content.length > maxLen
+          ? msg.content.slice(0, maxLen) + `... [${msg.content.length - maxLen} chars truncated]`
+          : msg.content,
+      });
+    }
+  }
+
+  // 4. Keep recent messages intact (last 5)
+  result.push(...recentMessages);
+
+  return result;
+}
+
+/**
  * Create a context manager with preset configurations
  */
 export function createContextManager(preset: "small" | "medium" | "large" = "medium"): ContextManager {

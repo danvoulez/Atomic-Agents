@@ -33,6 +33,7 @@ import {
   startMetricsFlushing,
   stopMetricsFlushing,
 } from "./metrics";
+import { startMetricsServer, stopMetricsServer } from "./http-server";
 import { getRepoProvider, type RepoInfo, type RepoSource } from "./repo-provider.js";
 
 const logger = getLogger().child({ component: "worker" });
@@ -62,10 +63,13 @@ export class Worker {
     
     // Set up error boundaries
     setupErrorBoundary();
-    
+
     // Start metrics flushing
     startMetricsFlushing();
-    
+
+    // Start HTTP server for Prometheus metrics endpoint
+    startMetricsServer();
+
     logger.info("Worker initialized", { 
       workerId: this.workerId, 
       mode: this.mode 
@@ -342,6 +346,7 @@ export class Worker {
   async shutdown(): Promise<void> {
     logger.info("Worker shutting down", { workerId: this.workerId });
     stopMetricsFlushing();
+    await stopMetricsServer();
     await this.drain();
   }
 }

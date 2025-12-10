@@ -48,7 +48,21 @@ export const listFilesTool: Tool<ListFilesParams, ListFilesResult> = {
     try {
       const dirPathParam = params.path ?? ".";
       const recursive = params.recursive ?? false;
-      const dirPath = path.join(ctx.repoPath, dirPathParam);
+      const dirPath = path.resolve(ctx.repoPath, dirPathParam);
+
+      // Security: Prevent path traversal attacks
+      const normalizedRepoPath = path.resolve(ctx.repoPath);
+      if (!dirPath.startsWith(normalizedRepoPath + path.sep) && dirPath !== normalizedRepoPath) {
+        return {
+          success: false,
+          error: {
+            code: "access_denied",
+            message: "Access Denied: Path traversal detected. Cannot list files outside the repository.",
+            recoverable: false,
+          },
+          eventId: crypto.randomUUID(),
+        };
+      }
 
       if (!fs.existsSync(dirPath)) {
         return {

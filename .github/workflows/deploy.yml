@@ -33,6 +33,28 @@ jobs:
         id: meta
         run: echo "tags=${{ github.sha }}" >> $GITHUB_OUTPUT
 
+      # Set up Rust for NAPI bindings build
+      - name: Set up Rust
+        uses: dtolnay/rust-action@stable
+        with:
+          toolchain: stable
+
+      # Set up Node.js for monorepo build
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Enable pnpm
+        run: corepack enable
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      # Build Rust + TypeScript (includes NAPI bindings)
+      - name: Build all packages
+        run: pnpm build:all
+
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
@@ -43,10 +65,12 @@ jobs:
         id: ecr-login
         uses: aws-actions/amazon-ecr-login@v2
 
+      # Build and push Docker images (use root context for monorepo)
       - name: Build and push dashboard
         uses: docker/build-push-action@v5
         with:
-          context: ./packages/dashboard
+          context: .
+          file: ./packages/dashboard/Dockerfile
           push: true
           tags: |
             ${{ steps.ecr-login.outputs.registry }}/ai-coding-team-${{ inputs.environment || 'staging' }}/dashboard:${{ github.sha }}
@@ -57,7 +81,8 @@ jobs:
       - name: Build and push worker
         uses: docker/build-push-action@v5
         with:
-          context: ./packages/worker
+          context: .
+          file: ./packages/worker/Dockerfile
           push: true
           tags: |
             ${{ steps.ecr-login.outputs.registry }}/ai-coding-team-${{ inputs.environment || 'staging' }}/worker:${{ github.sha }}

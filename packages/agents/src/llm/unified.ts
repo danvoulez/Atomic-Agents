@@ -440,8 +440,134 @@ export class UnifiedLLMClient implements LLMClient {
     };
   }
 
-  private async chatGoogle(): Promise<ChatResponse> {
-    throw new Error("Google Gemini implementation pending");
+  private async chatGoogle(messages: Message[], options?: ChatOptions): Promise<ChatResponse> {
+    if (!this.google) {
+      throw new Error("Google client not initialized. Set GOOGLE_API_KEY or GEMINI_API_KEY.");
+    }
+
+    // Get the generative model
+    const model = this.google.getGenerativeModel({ model: this.model });
+
+    // Separate system message
+    const systemMessage = messages.find(m => m.role === "system");
+    const otherMessages = messages.filter(m => m.role !== "system");
+
+    // Convert messages to Google format using 'any' to bypass complex SDK types
+    // The Google SDK has very strict types that don't align well with our generic structure
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const googleContents: any[] = [];
+
+    for (const msg of otherMessages) {
+      if (msg.role === "tool") {
+        // Tool results in Google format - use 'user' role for function responses
+        googleContents.push({
+          role: "user",
+          parts: [{
+            functionResponse: {
+              name: msg.name ?? "unknown",
+              response: JSON.parse(msg.content),
+            },
+          }],
+        });
+      } else if (msg.role === "assistant" && msg.tool_calls?.length) {
+        // Assistant with tool calls
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const parts: any[] = [];
+        if (msg.content) {
+          parts.push({ text: msg.content });
+        }
+        for (const tc of msg.tool_calls) {
+          parts.push({
+            functionCall: {
+              name: tc.name,
+              args: JSON.parse(tc.arguments),
+            },
+          });
+        }
+        googleContents.push({ role: "model", parts });
+      } else {
+        googleContents.push({
+          role: msg.role === "assistant" ? "model" : "user",
+          parts: [{ text: msg.content }],
+        });
+      }
+    }
+
+    // Convert tools to Google format - use 'any' to bypass strict SDK types
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const tools: any = options?.tools ? [{
+      functionDeclarations: options.tools.map(t => ({
+        name: t.name,
+        description: t.description,
+        parameters: {
+          type: "OBJECT",
+          properties: t.parameters.properties,
+          required: t.parameters.required ?? [],
+        },
+      })),
+    }] : undefined;
+
+    // Build generation config
+    const generationConfig = {
+      maxOutputTokens: options?.maxTokens ?? 4096,
+      temperature: options?.temperature ?? 0.1,
+    };
+
+    // Start chat with system instruction
+    const chat = model.startChat({
+      history: googleContents.slice(0, -1),
+      generationConfig,
+      tools,
+      systemInstruction: systemMessage?.content,
+    });
+
+    // Send the last message
+    const lastMsg = googleContents[googleContents.length - 1];
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const lastContent = lastMsg?.parts?.map((p: any) => p.text ?? "").join("") || "";
+
+    const result = await chat.sendMessage(lastContent);
+    const response = result.response;
+
+    // Parse response
+    const toolCalls: ToolCall[] = [];
+    let textContent = "";
+
+    for (const candidate of response.candidates || []) {
+      for (const part of candidate.content?.parts || []) {
+        if ("text" in part && part.text) {
+          textContent += part.text;
+        } else if ("functionCall" in part && part.functionCall) {
+          toolCalls.push({
+            id: crypto.randomUUID(),
+            name: part.functionCall.name,
+            arguments: JSON.stringify(part.functionCall.args),
+          });
+        }
+      }
+    }
+
+    // Determine finish reason
+    let finishReason: ChatResponse["finishReason"] = "stop";
+    if (toolCalls.length > 0) {
+      finishReason = "tool_calls";
+    } else if (response.candidates?.[0]?.finishReason === "MAX_TOKENS") {
+      finishReason = "length";
+    }
+
+    // Get usage metadata (Google provides this differently)
+    const usage = response.usageMetadata;
+
+    return {
+      content: textContent,
+      toolCalls: toolCalls.length > 0 ? toolCalls : undefined,
+      finishReason,
+      usage: {
+        promptTokens: usage?.promptTokenCount ?? 0,
+        completionTokens: usage?.candidatesTokenCount ?? 0,
+        totalTokens: usage?.totalTokenCount ?? 0,
+      },
+    };
   }
 
   getSelection(): ModelSelection {

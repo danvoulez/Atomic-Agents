@@ -108,6 +108,23 @@ export const applyPatchTool: Tool<ApplyPatchParams, ApplyPatchResult> = {
       // Analyze the patch
       const analysis = analyzePatch(params.patch);
 
+      // Security: Check for path traversal in patch file paths
+      const normalizedRepoPath = path.resolve(ctx.repoPath);
+      for (const filePath of analysis.files) {
+        const resolvedPath = path.resolve(ctx.repoPath, filePath);
+        if (!resolvedPath.startsWith(normalizedRepoPath + path.sep) && resolvedPath !== normalizedRepoPath) {
+          return {
+            success: false,
+            error: {
+              code: "access_denied",
+              message: `Access Denied: Patch contains path traversal (${filePath}). Cannot modify files outside the repository.`,
+              recoverable: false,
+            },
+            eventId: crypto.randomUUID(),
+          };
+        }
+      }
+
       // Check mechanic mode constraints
       if (ctx.mode === "mechanic") {
         if (analysis.filesChanged > 5) {
