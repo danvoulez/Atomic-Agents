@@ -175,6 +175,16 @@ export abstract class BaseAgent {
               name: toolCall.name,
               result: toolResult,
             });
+
+            // CRITICAL: Check budget AFTER each tool call
+            // A single read_file of a 5MB log file can blow the budget instantly
+            if (ctx.budget.tokensRemaining <= 0) {
+              await this.logEvent(ctx, {
+                kind: "error",
+                summary: `Budget exceeded after tool call: ${toolCall.name}`,
+              });
+              return { success: false, reason: "token_limit_exceeded" };
+            }
           }
 
           // Add all tool results as a single message batch

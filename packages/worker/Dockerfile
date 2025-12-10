@@ -22,5 +22,20 @@ RUN pnpm install --frozen-lockfile
 # Build the worker and its dependencies (agents, db, tools, machinery)
 RUN pnpm --filter @ai-coding-team/worker... build
 
-# 3. Runtime execution
-CMD ["node", "packages/worker/dist/index.js"]
+# 3. Security: Create non-root user for runtime
+# This prevents the agent from having root access to the container
+# If the agent tries `apt-get install malware`, it fails
+RUN addgroup -S agent && adduser -S agent -G agent
+
+# Create workspace directory for agent operations
+RUN mkdir -p /home/agent/workspace && chown -R agent:agent /home/agent
+
+# Change ownership of app directory to agent user
+RUN chown -R agent:agent /app
+
+# Switch to non-root user
+WORKDIR /home/agent
+USER agent
+
+# 4. Runtime execution
+CMD ["node", "/app/packages/worker/dist/index.js"]

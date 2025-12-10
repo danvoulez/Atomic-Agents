@@ -52,8 +52,22 @@ export const searchCodeTool: Tool<SearchCodeParams, SearchCodeResult> = {
     try {
       const maxResults = params.maxResults ?? 20;
       const searchPath = params.path
-        ? path.join(ctx.repoPath, params.path)
+        ? path.resolve(ctx.repoPath, params.path)
         : ctx.repoPath;
+
+      // Security: Prevent path traversal attacks
+      const normalizedRepoPath = path.resolve(ctx.repoPath);
+      if (!searchPath.startsWith(normalizedRepoPath + path.sep) && searchPath !== normalizedRepoPath) {
+        return {
+          success: false,
+          error: {
+            code: "access_denied",
+            message: "Access Denied: Path traversal detected. Cannot search outside the repository.",
+            recoverable: false,
+          },
+          eventId: crypto.randomUUID(),
+        };
+      }
 
       // Build ripgrep command
       let cmd = `rg --json --max-count ${maxResults * 2} "${params.query}"`;
